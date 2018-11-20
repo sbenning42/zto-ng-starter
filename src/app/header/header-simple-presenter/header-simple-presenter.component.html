@@ -1,0 +1,4 @@
+<mat-toolbar color="primary">
+  <span style="flex: 1"></span>
+  <a *ngFor="let link of links" mat-button [routerLink]="link.path" routerLinkActive="mat-raised-button">{{link.name}}</a>
+</mat-toolbar>
