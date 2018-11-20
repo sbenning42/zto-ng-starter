@@ -10,8 +10,7 @@ export abstract class ZtoIntentSelectorResolver {
 }
 
 export class ZtoIntentFactory {
-    create(selector: ZtoIntentSelector) {
-        const extra = typeof(selector) === 'string' ? {type: selector} : selector;
-        return new ZtoIntent(extra.type, extra.payload, extra.params);
+    create(selector: ZtoIntentSelector, data?: any) {
+        return selector.factory(data);
     }
 }

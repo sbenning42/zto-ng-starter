@@ -21,17 +21,3 @@ export class LoggerLogIntent extends ZtoIntent {
         );
     }
 }
-
-export class LoggerSelectorResolver extends ZtoIntentSelectorResolver {
-    resolve(selector: ZtoIntentSelector) {
-        const extra = typeof(selector) === 'string'
-            ? {type: selector}
-            : selector;
-        switch (extra.type) {
-            case LoggerIntentType.log:
-                return new LoggerLogIntent(extra.payload);
-            default:
-                return undefined;
-        }
-    }
-}

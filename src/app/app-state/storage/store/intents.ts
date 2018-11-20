@@ -1,7 +1,7 @@
 import { ZtoIntent, ZtoIntentFlow, ZtoIntentResolver, ZtoIntentSelectorExtra, ZtoIntentSelector } from "../../zto-intent-system/store/models";
 import { StorageEntries } from "../storage.models";
 import { StorageService } from "../storage.service";
-import { LoggerIntentType } from "../../logger/store/intents";
+import { LoggerIntentType, LoggerLogIntent } from "../../logger/store/intents";
 import { ZtoIntentSelectorResolver } from "../../zto-intent-system/store/tools";
 
 export enum StorageIntentType {
@@ -19,16 +19,16 @@ export class StorageFetchIntent extends ZtoIntent {
             new ZtoIntentFlow(
                 new ZtoIntentResolver(() => this.params.service.getAll()),
                 [
-                    new ZtoIntentSelectorExtra(LoggerIntentType.log, {messages: ['Fetching storage start ...']}),
+                    {factory: (data?: any) => new LoggerLogIntent({messages: ['Fetching storage start ...']})}
                 ], [], [],
                 [
-                    new ZtoIntentSelectorExtra(LoggerIntentType.log, {messages: ['Fetching storage success.']}),
+                    {factory: (data?: any) => new LoggerLogIntent({messages: ['Fetching storage success. Got result: ', data]})}
                 ],
                 [
-                    new ZtoIntentSelectorExtra(LoggerIntentType.log, {messages: ['Fetching storage failed.']}),
+                    {factory: (data?: any) => new LoggerLogIntent({messages: ['Fetching storage failed.']})}
                 ],
                 [
-                    new ZtoIntentSelectorExtra(LoggerIntentType.log, {messages: ['Fetching storage was canceled.']}),
+                    {factory: (data?: any) => new LoggerLogIntent({messages: ['Fetching storage canceled.']})}
                 ]
             )
         );
@@ -41,7 +41,18 @@ export class StorageSaveIntent extends ZtoIntent {
             payload, {service},
             new ZtoIntentFlow(
                 new ZtoIntentResolver(() => this.params.service.save(this.payload.entries)),
-                [], [], [], [], [], []
+                [
+                    {factory: (payload: {messages: any[]}) => new LoggerLogIntent(payload), staticPayload: {messages: ['Saving storage start ...']}}
+                ], [], [],
+                [
+                    {factory: (payload: {messages: any[]}) => new LoggerLogIntent(payload), staticPayload: {messages: ['Saving storage success.']}}
+                ],
+                [
+                    {factory: (payload: {messages: any[]}) => new LoggerLogIntent(payload), staticPayload: {messages: ['Saving storage failed.']}}
+                ],
+                [
+                    {factory: (payload: {messages: any[]}) => new LoggerLogIntent(payload), staticPayload: {messages: ['Saving storage canceled.']}}
+                ]
             ),
         );
     }
@@ -53,7 +64,18 @@ export class StorageRemoveIntent extends ZtoIntent {
             payload, {service},
             new ZtoIntentFlow(
                 new ZtoIntentResolver(() => this.params.service.remove(this.payload.keys)),
-                [], [], [], [], [], []
+                [
+                    {factory: (payload: {messages: any[]}) => new LoggerLogIntent(payload), staticPayload: {messages: ['Removing storage start ...']}}
+                ], [], [],
+                [
+                    {factory: (payload: {messages: any[]}) => new LoggerLogIntent(payload), staticPayload: {messages: ['Fetching storage success.']}}
+                ],
+                [
+                    {factory: (payload: {messages: any[]}) => new LoggerLogIntent(payload), staticPayload: {messages: ['Fetching storage failed.']}}
+                ],
+                [
+                    {factory: (payload: {messages: any[]}) => new LoggerLogIntent(payload), staticPayload: {messages: ['Fetching storage canceled.']}}
+                ]
             ),
         );
     }
@@ -65,7 +87,18 @@ export class StorageClearIntent extends ZtoIntent {
             undefined, {service},
             new ZtoIntentFlow(
                 new ZtoIntentResolver(() => this.params.service.clear()),
-                [], [], [], [], [], []
+                [
+                    {factory: (payload: {messages: any[]}) => new LoggerLogIntent(payload), staticPayload: {messages: ['Fetching storage start ...']}}
+                ], [], [],
+                [
+                    {factory: (payload: {messages: any[]}) => new LoggerLogIntent(payload), staticPayload: {messages: ['Fetching storage success.']}}
+                ],
+                [
+                    {factory: (payload: {messages: any[]}) => new LoggerLogIntent(payload), staticPayload: {messages: ['Fetching storage failed.']}}
+                ],
+                [
+                    {factory: (payload: {messages: any[]}) => new LoggerLogIntent(payload), staticPayload: {messages: ['Fetching storage canceled.']}}
+                ]
             )
         );
     }
@@ -73,23 +106,3 @@ export class StorageClearIntent extends ZtoIntent {
 
 export type StorageIntents = StorageFetchIntent|StorageSaveIntent|StorageRemoveIntent|StorageClearIntent;
 
-export class StorageSelectorResolver extends ZtoIntentSelectorResolver {
-    constructor(public service: StorageService) {
-        super();
-    }
-    resolve(selector: ZtoIntentSelector) {
-        const extra = typeof(selector) === 'string' ? {type: selector} : selector;
-        switch (extra.type) {
-            case StorageIntentType.fetch:
-                return new StorageFetchIntent(this.service);
-            case StorageIntentType.save:
-                return new StorageSaveIntent(extra.payload, this.service);
-            case StorageIntentType.remove:
-                return new StorageRemoveIntent(extra.payload, this.service);
-            case StorageIntentType.clear:
-                return new StorageClearIntent(this.service);
-            default:
-                return undefined;
-        }
-    }
-}

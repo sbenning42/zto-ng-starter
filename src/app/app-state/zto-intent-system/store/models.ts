@@ -16,6 +16,7 @@ export const ZtoIntentStatusMap = {
     canceled: ZtoIntentStatus.canceled,
 };
 
+/*
 export class ZtoIntentSelectorExtra<T = any> {
     constructor(
         public type: string,
@@ -24,8 +25,10 @@ export class ZtoIntentSelectorExtra<T = any> {
         public results?: any,
     ) {}
 }
+*/
 
-export type ZtoIntentSelector = string|ZtoIntentSelectorExtra;
+export type ZtoIntentSelectorExtra<T = any, U = any> = {factory: (payload?: T, data?: any) => ZtoIntent, staticPayload?: U};
+export type ZtoIntentSelector<T = any, U = any> = ZtoIntentSelectorExtra<T, U>;
 
 export class ZtoIntentResolver {
     constructor(

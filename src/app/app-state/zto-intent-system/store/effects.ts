@@ -6,9 +6,11 @@ import { filter, tap, first, timeout, defaultIfEmpty, map, catchError, takeUntil
 
 import { ZtoIntentSystemFacade } from './facade';
 import { ZtoIntent, ZtoIntentStatus, ZtoIntentSelector } from "./models";
+import { ZtoIntentFactory } from "./tools";
 
 @Injectable()
 export class ZtoIntentSystemEffects {
+    factory = new ZtoIntentFactory;
     constructor(
         public actions: Actions,
         public system: ZtoIntentSystemFacade,
@@ -35,12 +37,12 @@ export class ZtoIntentSystemEffects {
                     switch (result.status) {
                         case ZtoIntentStatus.resolved: {
                             if (intent.flow.independantAfter && intent.flow.independantAfter.length > 0) {
-                                this.dispatchAllSync(intent.flow.independantAfter);
+                                this.dispatchAllSync(intent.flow.independantAfter, result.data);
                             }
                             intent.results = result.data;
                             this.system.resolve(intent);
                             if (intent.flow.onResolve) {
-                                this.dispatchAllSync(intent.flow.onResolve);
+                                this.dispatchAllSync(intent.flow.onResolve, result.data);
                             }
                             break ;
                         }
@@ -48,7 +50,7 @@ export class ZtoIntentSystemEffects {
                             intent.results = result.data;
                             this.system.error(intent);
                             if (intent.flow.onError) {
-                                this.dispatchAllSync(intent.flow.onError);
+                                this.dispatchAllSync(intent.flow.onError, result.data);
                             }
                             break ;
                         }
@@ -83,9 +85,9 @@ export class ZtoIntentSystemEffects {
         );
     }
 
-    dispatchAllSync(selectors: ZtoIntentSelector[]) {
+    dispatchAllSync(selectors: ZtoIntentSelector[], data?: any) {
         selectors
-            .map((selector: ZtoIntentSelector) => this.system.resolveSelector(selector))
+            .map((selector: ZtoIntentSelector) => this.factory.create(selector, data))
             .forEach((intent: ZtoIntent) => this.store.dispatch(intent));
     }
 }
