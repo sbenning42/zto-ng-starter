@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { StorageFacade } from '../../app-state/storage/store/facade';
 
 @Component({
   selector: 'app-home-page',
@@ -7,9 +8,10 @@ import { Component, OnInit } from '@angular/core';
 })
 export class HomePageComponent implements OnInit {
 
-  constructor() { }
+  constructor(public storage: StorageFacade) { }
 
   ngOnInit() {
+    this.storage.fetch();
   }
 
 }
