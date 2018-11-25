@@ -1,0 +1,12 @@
+<app-storage-facade-presenter
+  [loaded]="loaded$|async"
+  [entries]="entries$|async"
+  [loadClosed]="!actions.load.closed$ || (actions.load.closed$|async)"
+  [saveClosed]="!actions.save.closed$ || (actions.save.closed$|async)"
+  [removeClosed]="!actions.remove.closed$ || (actions.remove.closed$|async)"
+  [clearClosed]="!actions.clear.closed$ || (actions.clear.closed$|async)"
+  (loadEvt)="load($event)"
+  (saveEvt)="save($event)"
+  (removeEvt)="remove($event)"
+  (clearEvt)="clear($event)"
+></app-storage-facade-presenter>

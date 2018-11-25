@@ -18,6 +18,7 @@ import { MaterialModule } from '../material/material.module';
   exports: [
     RoutingModule,
     MaterialModule,
+    ReactiveFormsModule
   ]
 })
 export class SharedModule { }

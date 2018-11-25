@@ -1,0 +1,36 @@
+.flex-row-sc {
+  width: 100%;
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+}
+.flex-row-cc {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.flex-row-ec {
+  width: 100%;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+.flex-row-ss {
+  width: 100%;
+  display: flex;
+  justify-content: flex-start;
+  align-items: stretch;
+}
+.flex-row-cs {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: stretch;
+}
+.flex-row-es {
+  width: 100%;
+  display: flex;
+  justify-content: flex-end;
+  align-items: stretch;
+}

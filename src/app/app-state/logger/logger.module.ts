@@ -1,10 +1,23 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { LoggerService } from './logger.service';
+import { LoggerResolver } from './store/logger.resolver';
+import { LoggerFacade } from './store/logger.facade';
+import { LoggerFacadeContainerComponent } from './logger-facade-container/logger-facade-container.component';
+import { LoggerFacadePresenterComponent } from './logger-facade-presenter/logger-facade-presenter.component';
+import { SharedModule } from 'src/app/shared/shared.module';
 
 @NgModule({
   imports: [
-    CommonModule
+    CommonModule,
+    SharedModule,
   ],
-  declarations: []
+  declarations: [LoggerFacadeContainerComponent, LoggerFacadePresenterComponent],
+  providers: [
+    LoggerService,
+    LoggerResolver,
+    LoggerFacade,
+  ],
+  exports: [LoggerFacadeContainerComponent]
 })
 export class LoggerModule { }

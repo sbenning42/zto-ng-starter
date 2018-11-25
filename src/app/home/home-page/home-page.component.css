@@ -1,0 +1,11 @@
+
+.flex-row-cc {
+  margin: 2em;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.flex-row-cc > * + * {
+  margin-left: 2em;
+}

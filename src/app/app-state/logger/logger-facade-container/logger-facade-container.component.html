@@ -1,0 +1,6 @@
+<app-logger-facade-presenter
+  [logClosed]="!actions.log.closed$ || (actions.log.closed$|async)"
+  [errorClosed]="!actions.error.closed$ || (actions.error.closed$|async)"
+  (logEvt)="log($event)"
+  (errorEvt)="error($event)"
+></app-logger-facade-presenter>

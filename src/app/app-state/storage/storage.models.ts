@@ -1,3 +1,3 @@
 export interface StorageEntries {
-    [key: string]: string,
+  [key: string]: string;
 }

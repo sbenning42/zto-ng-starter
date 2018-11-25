@@ -1,10 +1,10 @@
 import { Injectable } from '@angular/core';
 import { Observable, of, throwError } from 'rxjs';
-import { delay, switchMap } from 'rxjs/operators';
+import { delay, switchMap, map } from 'rxjs/operators';
 import { StorageEntries } from './storage.models';
 
 export class MockAsync {
-  async(value: any, options: any = {delayTime: 1500, errorRate: 0}): Observable<any> {
+  async(value: any, options: any = {delayTime: 0, errorRate: 0}): Observable<any> {
     return of(value).pipe(
       delay(options.delayTime !== undefined ? options.delayTime : 0),
       switchMap((innerValue: any) => {
@@ -27,24 +27,34 @@ export class StorageService {
 
   constructor() { }
 
-  getAll(): Observable<StorageEntries> {
+  getAll(keys?: string[], options?: any): Observable<StorageEntries> {
     const entries = {};
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
-      entries[key] = localStorage.getItem(key);
+      if (keys === undefined || (keys !== undefined && keys.includes(key))) {
+        entries[key] = localStorage.getItem(key);
+      }
     }
-    return this.mock.async(entries);
+    return this.mock.async(entries, options);
   }
-  save(entries: StorageEntries): Observable<StorageEntries> {
+  save(entries: StorageEntries, options?: any): Observable<StorageEntries> {
     Object.entries(entries).forEach(([key, value]) => localStorage.setItem(key, value));
-    return this.mock.async(entries);
+    return this.mock.async(entries, options);
   }
-  remove(keys: string[]): Observable<string[]> {
-    keys.forEach((key: string) => localStorage.removeItem(key));
-    return this.mock.async(keys);
+  remove(keys?: string[], options?: any): Observable<string[]> {
+    if (keys === undefined) {
+      keys = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        keys.push(localStorage.key(i));
+      }
+      return this.clear().pipe(map(() => keys));
+    } else {
+      keys.forEach((key: string) => localStorage.removeItem(key));
+      return this.mock.async(keys, options);
+    }
   }
-  clear(): Observable<StorageEntries> {
+  clear(options?: any): Observable<StorageEntries> {
     localStorage.clear();
-    return this.mock.async({});
+    return this.mock.async({}, options);
   }
 }

@@ -18,7 +18,7 @@ export class HeaderService {
   ];
 
   private links$$: BehaviorSubject<LinkDescriptor[]> = new BehaviorSubject([]);
-  
+
   get links$(): Observable<LinkDescriptor[]> {
     return this.links$$.asObservable();
   }
