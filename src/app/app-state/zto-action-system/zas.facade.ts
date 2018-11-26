@@ -133,14 +133,15 @@ export class ZasFacade {
     const wasErroreds = was(ZtoCorrelationStatus.error);
     const wasCanceleds = was(ZtoCorrelationStatus.cancel);
     const notEmpty = v => !!v;
+    const notEmptyCorrelations = Object.values(action.correlations).filter(notEmpty);
     return new ZtoLazyAction(
       action,
       () => this.dispatch(action),
-      Object.values(action.correlations).filter(notEmpty).reduce(wasPendings, {}),
-      Object.values(action.correlations).filter(notEmpty).reduce(wasResolveds, {}),
-      Object.values(action.correlations).filter(notEmpty).reduce(wasErroreds, {}),
-      Object.values(action.correlations).filter(notEmpty).reduce(wasCanceleds, {}),
-      Object.values(action.correlations).filter(notEmpty).reduce(cancels, {}),
+      notEmptyCorrelations.reduce(wasPendings, {}),
+      notEmptyCorrelations.reduce(wasResolveds, {}),
+      notEmptyCorrelations.reduce(wasErroreds, {}),
+      notEmptyCorrelations.reduce(wasCanceleds, {}),
+      notEmptyCorrelations.reduce(cancels, {}),
     );
   }
   collectGarbage() {

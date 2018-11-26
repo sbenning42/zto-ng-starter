@@ -193,19 +193,16 @@ export function zasInterpretFlowCorrelation(
   const adaptResponse = (adapter: ZtoFlowCorrelationAdapter) => adapter.status === ZtoCorrelationStatus.success
     ? [
       ZtoCorrelationStatus.success,
-      // resolverFactory(adapter.mapFlow).resolveFactory(adapter),
       ...resolverFactory(adapter.mapFlow).factories.success({...adapter.mapFlow, result: adapter.data})
     ]
     : (
       adapter.status === ZtoCorrelationStatus.cancel
         ? [
           ZtoCorrelationStatus.cancel,
-          // resolverFactory(adapter.mapFlow).cancelFactory(adapter),
           ...resolverFactory(adapter.mapFlow).factories.cancel({...adapter.mapFlow, result: adapter.data}),
         ]
         : [
           ZtoCorrelationStatus.error,
-          // resolverFactory(adapter.mapFlow).errorFactory(adapter),
           ...resolverFactory(adapter.mapFlow).factories.error({...adapter.mapFlow, error: adapter.data}),
         ]
     );
@@ -226,13 +223,9 @@ export function zasInterpretFlowCorrelation(
     filter(hasFlowCorrelation),
     map(mapFlowCorrelation),
     mergeMap((mapFlow: ZtoMapFlowCorrelation) => {
-      const toResolve = [];
-      Object.values(mapFlow.action.correlations)
-        .filter(notEmpty)
-        .filter((correlation: ZtoCorrelation) => correlation.name !== 'flow')
-        .forEach((correlation: ZtoCorrelation) => {
-          toResolve.push(resolverFactory(mapFlow).select(correlation.id).pipe(last()));
-        });
+      const toResolve = Object.values(mapFlow.action.correlations)
+        .filter((correlation: ZtoCorrelation) => correlation && correlation.name !== 'flow')
+        .map((correlation: ZtoCorrelation) => resolverFactory(mapFlow).select(correlation.id).pipe(last()));
       return timer(options(mapFlow).delayTimeBeforeFactory).pipe(
         switchMap(() => {
           return defer(() => zip(...toResolve).pipe(

@@ -1,0 +1,8 @@
+<app-toast-facade-presenter
+  [openClosed]="!actions.open.closed$ || (actions.open.closed$|async)"
+  [closeClosed]="!actions.close.closed$ || (actions.close.closed$|async)"
+  (openEvt)="open($event)"
+  (closeEvt)="close()"
+  (cancelOpenEvt)="cancelOpen()"
+  (cancelCloseEvt)="cancelClose()"
+></app-toast-facade-presenter>

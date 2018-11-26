@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import { StorageService } from './app-state/storage/storage.service';
+import { ToastFacade } from './app-state/toast/store/toast.facade';
 
 @Component({
   selector: 'app-root',
@@ -9,7 +9,7 @@ import { StorageService } from './app-state/storage/storage.service';
 export class AppComponent {
   title = 'zto-intent-starter';
   constructor(
-    public storage: StorageService
+    public toast: ToastFacade
   ) {
   }
 }

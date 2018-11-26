@@ -1,5 +1,13 @@
-
 <section class="flex-row-cc">
-  <app-logger-facade-container></app-logger-facade-container>
-  <app-storage-facade-container></app-storage-facade-container>
+  <mat-tab-group mat-align-tabs="end" animationDuration="350ms">
+    <mat-tab label="LOGGER">
+      <app-logger-facade-container></app-logger-facade-container>
+    </mat-tab>
+    <mat-tab label="TOAST">
+      <app-toast-facade-container></app-toast-facade-container>
+    </mat-tab>
+    <mat-tab label="STORAGE">
+      <app-storage-facade-container></app-storage-facade-container>
+    </mat-tab>
+  </mat-tab-group>
 </section>

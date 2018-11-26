@@ -1,4 +1,4 @@
-<section class="flex-row-cc">
+<section class="card flex-row-cc">
   <mat-card>
     <mat-card-header>
       <mat-card-title>
@@ -31,12 +31,15 @@
           <input matInput type="text" placeholder="Entry value *" formControlName="value">
           <mat-error *ngIf="valueControl.invalid && valueControl.hasError('required')">An Entry Value is required</mat-error>
         </mat-form-field>
-        <button mat-button color="primary" (click)="save()" [disabled]="saveForm.invalid">SAVE</button>
+        <button mat-button color="primary" (click)="save()" [disabled]="saveForm.invalid || !saveClosed" *ngIf="saveClosed">SAVE</button>
+        <button mat-button color="accent" (click)="cancelSave()" [disabled]="saveClosed" *ngIf="!saveClosed">CANCEL SAVE</button>
       </form>
     </mat-card-content>
     <mat-card-actions class="flex-row-cs">
-      <button mat-button color="primary" (click)="load()" [disabled]="!loadClosed">LOAD</button>
-      <button mat-button color="warn" (click)="clear()" [disabled]="!clearClosed">CLEAR</button>
+      <button mat-button color="primary" (click)="load()" [disabled]="!loadClosed" *ngIf="loadClosed">LOAD</button>
+      <button mat-button color="accent" (click)="cancelLoad()" [disabled]="loadClosed" *ngIf="!loadClosed">CANCEL LOAD</button>
+      <button mat-button color="warn" (click)="clear()" [disabled]="!clearClosed" *ngIf="clearClosed">CLEAR</button>
+      <button mat-button color="accent" (click)="cancelClear()" [disabled]="clearClosed" *ngIf="!clearClosed">CANCEL CLEAR</button>
     </mat-card-actions>
   </mat-card>
 </section>

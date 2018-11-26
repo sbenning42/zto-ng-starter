@@ -2,21 +2,20 @@
   <mat-card>
     <mat-card-header>
       <mat-card-title>
-        Logger Facade Presenter
+        Toast Facade Presenter
       </mat-card-title>
     </mat-card-header>
     <mat-card-content>
-      <h3>Send Logger Message</h3>
+      <h3>Send Toast Message</h3>
       <form [formGroup]="messageForm" #detachedForm>
         <mat-form-field>
           <input matInput type="text" placeholder="Message *" formControlName="message">
-          <mat-error *ngIf="messageControl.invalid && messageControl.hasError('required')">Message is required</mat-error>
+          <mat-error *ngIf="messageControl.invalid && messageControl.hasError('required')">A Message is required</mat-error>
         </mat-form-field>
       </form>
     </mat-card-content>
     <mat-card-actions class="flex-row-cs">
-      <button mat-button color="primary" (click)="log()" [disabled]="messageForm.invalid">LOG</button>
-      <button mat-button color="warn" (click)="error()" [disabled]="messageForm.invalid">ERROR</button>
+      <button mat-button color="primary" (click)="open()" [disabled]="messageForm.invalid">SEND</button>
     </mat-card-actions>
   </mat-card>
 </section>

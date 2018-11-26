@@ -36,24 +36,28 @@ export class StorageLoadAsyncResolver {
   load = this.zas.baseAsyncResolver(
     `${StorageActionType.load}@async`,
     mapAsync => this.storage.getAll(mapAsync.action.payload.keys),
+    {delayTimeBeforeFactory: 1500}
   );
   loadFlow = this.zas.baseFlowResolver(`${StorageActionType.load}@flow`, logOrErrorFlow);
 
   save = this.zas.baseAsyncResolver(
     `${StorageActionType.save}@async`,
     mapAsync => this.storage.save(mapAsync.action.payload.entries),
+    {delayTimeBeforeFactory: 1500}
   );
   saveFlow = this.zas.baseFlowResolver(`${StorageActionType.save}@flow`, logOrErrorFlow);
 
   remove = this.zas.baseAsyncResolver(
     `${StorageActionType.remove}@async`,
     mapAsync => this.storage.remove(mapAsync.action.payload.keys),
+    {delayTimeBeforeFactory: 1500}
   );
   removeFlow = this.zas.baseFlowResolver(`${StorageActionType.remove}@flow`, logOrErrorFlow);
 
   clear = this.zas.baseAsyncResolver(
     `${StorageActionType.clear}@async`,
     () => this.storage.clear(),
+    {delayTimeBeforeFactory: 1500}
   );
   clearFlow = this.zas.baseFlowResolver(`${StorageActionType.clear}@flow`, logOrErrorFlow);
 

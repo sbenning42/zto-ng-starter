@@ -11,6 +11,7 @@ import { environment } from '../../environments/environment';
 import { StorageModule } from './storage/storage.module';
 import { LoggerModule } from './logger/logger.module';
 import { ZtoActionSystemModule } from './zto-action-system/zto-action-system.module';
+import { ToastModule } from './toast/toast.module';
 
 @NgModule({
   imports: [
@@ -22,7 +23,8 @@ import { ZtoActionSystemModule } from './zto-action-system/zto-action-system.mod
     StoreDevtoolsModule.instrument({ maxAge: 100, logOnly: !environment.production }),
     ZtoActionSystemModule,
     LoggerModule,
-    StorageModule
+    StorageModule,
+    ToastModule
   ],
   declarations: [],
 })

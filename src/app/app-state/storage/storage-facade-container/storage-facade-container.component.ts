@@ -50,4 +50,17 @@ export class StorageFacadeContainerComponent implements OnInit {
     clear.dispatch();
   }
 
+  cancelLoad() {
+    this.actions.load.cancel();
+  }
+  cancelSave() {
+    this.actions.save.cancel();
+  }
+  cancelRemove() {
+    this.actions.remove.cancel();
+  }
+  cancelClear() {
+    this.actions.clear.cancel();
+  }
+
 }

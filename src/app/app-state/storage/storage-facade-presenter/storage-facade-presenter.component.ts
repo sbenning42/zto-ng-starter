@@ -57,9 +57,7 @@ export class StorageFacadePresenterComponent implements OnInit {
 
   save() {
     if (this.saveClosed) {
-      const entries = {
-        [this.keyControl.value]: this.valueControl.value,
-      };
+      const entries = { [this.keyControl.value]: this.valueControl.value };
       this.saveForm.reset();
       this.saveEvt.emit(entries);
     }

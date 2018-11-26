@@ -1,6 +1,5 @@
 import * as uuid from 'uuid/v4';
-import { Observable, defer, of, Subject, Subscription } from 'rxjs';
-import { filter, map, distinctUntilChanged } from 'rxjs/operators';
+import { Observable, Subject } from 'rxjs';
 
 export interface ZtoUnique {
   readonly id: string;
@@ -83,7 +82,6 @@ export class ZtoBaseCommandWithoutSrcCreator<T> extends ZtoBaseCommandWithoutSrc
   }
 }
 
-// T MUST implements ZtoAction<any>
 export class ZtoLazyAction {
   private _closed: ZtoIndex<boolean> = {};
   private closed: Subject<ZtoIndex<boolean>> = new Subject;
