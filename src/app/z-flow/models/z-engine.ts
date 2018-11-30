@@ -1,6 +1,6 @@
 import { ZFlow } from './z-flow';
 import { ZStep } from './z-step';
-import { Observable, empty, zip, of, concat } from 'rxjs';
+import { Observable, empty, zip, of, concat, defer } from 'rxjs';
 import { tap, switchMap, first, map, startWith } from 'rxjs/operators';
 import { ZGraph } from './z-graph';
 import { ZNode } from './z-node';
@@ -9,16 +9,23 @@ import { ZStepStatus } from './z-step-status';
 import { ZDictionary } from './z-helpers';
 
 export class ZEngine {
+  private provided: ZDictionary = new ZDictionary;
   private graph: ZGraph;
   execution$: Observable<ZStep>;
   constructor(public services: ZDictionary, flow: ZFlow) {
+    if (flow.provide) {
+      this.provided = {...this.provided, ...flow.provide};
+    }
     this.graph = new ZGraph(flow.nodes, flow.links);
     this.runnerFactory();
     // @TODO: analyse the flow to save it's provide array in Redux-storage
   }
   private runnerFactory() {
-    this.execution$ = this.recTraverser(this.graph.tree).pipe(
-      startWith({status: ZStepStatus.start}),
+    this.execution$ = concat(
+      this.recTraverser(this.graph.tree).pipe(
+        startWith({status: ZStepStatus.start}),
+      ),
+      of({status: ZStepStatus.stop})
     );
   }
   private recTraverser(node: ZNode<ZAtom>): Observable<ZStep> {
@@ -28,18 +35,28 @@ export class ZEngine {
     );
     const childsExecutionOrStop$ = node.childs.length > 0
       ? node.childs.map(child => this.recTraverser(child))
-      : [of({ status: ZStepStatus.stop })];
+      : [empty()];
     return concat(selfExecution$, ...childsExecutionOrStop$).pipe<ZStep>(
       // @TODO implement retry/reverse logic
     );
   }
   private traverseNode(node: ZNode<ZAtom>): Observable<ZStep> {
-    const mustInject = ([name]: [string, any]) => Object.keys(node.item.inject).includes(name);
-    const asZDictionary = (inject: ZDictionary, [name, service]: [string, any]) => ({ ...inject, [name]: service });
+    const mustInject = ([name]: [string, any]) => Object.keys(node.item.inject || {}).includes(name);
+    const mustProvide = ([name]: [string, any]) => Object.keys(node.item.requires || {}).includes(name);
+    const pushOnProvided = ([name, value]: [string, any]) => {
+      if (!this.provided[name]) {
+        this.provided[name] = [];
+      }
+      this.provided[name].push(value);
+    };
+    const asZDictionary = (dict: ZDictionary, [name, item]: [string, any]) => ({ ...dict, [name]: item });
+    const asZDictionaryFromStack = (dict: ZDictionary, [name, item]: [string, any]) => ({ ...dict, [name]: item.shift() });
     node.item.inject = Object.entries(this.services)
       .filter(mustInject)
       .reduce(asZDictionary, new ZDictionary);
-    const args$ = of({}).pipe(first()); // @TODO: get args from store by resolving requires field of the task
+    const args$ = defer(() => of(Object.entries(this.provided)
+      .filter(mustProvide)
+      .reduce(asZDictionaryFromStack, new ZDictionary)).pipe(first())); // @TODO: get args from store by resolving requires field of the task
     return node.item.execute
       ? args$.pipe(
         tap(requires => node.item.preExecute ? node.item.preExecute() : undefined),
@@ -52,6 +69,7 @@ export class ZEngine {
           //    - act as a ZTask / ZFlow to dispatch
           //    - been aggregated in a ZTask execute method
           first(),
+          tap((result: ZDictionary) => Object.entries(result).forEach(pushOnProvided)),
           map((result: ZDictionary) => ({status: ZStepStatus.step, data: new ZDictionary(result)})),
           // @TODO implement retry/reverse logic
         ))

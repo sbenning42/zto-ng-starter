@@ -4,7 +4,7 @@ import { delay, switchMap, map } from 'rxjs/operators';
 import { StorageEntries } from './storage.models';
 
 export class MockAsync {
-  async(value: any, options: any = {delayTime: 0, errorRate: 0}): Observable<any> {
+  async(value: any, options: any = {delayTime: 5000, errorRate: 0}): Observable<any> {
     return of(value).pipe(
       delay(options.delayTime !== undefined ? options.delayTime : 0),
       switchMap((innerValue: any) => {

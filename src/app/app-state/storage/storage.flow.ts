@@ -1,91 +1,58 @@
-import { ZGraphFlow } from '../../z-flow/models/z-flow';
+import { ZGraphFlow, ZFlow } from '../../z-flow/models/z-flow';
 import { ZTask } from 'src/app/z-flow/models/z-task';
-import { of } from 'rxjs';
+import { of, Observable } from 'rxjs';
 import { ZDictionary } from 'src/app/z-flow/models/z-helpers';
 import { ZLink } from 'src/app/z-flow/models/z-link';
 import { ZEngine } from 'src/app/z-flow/models/z-engine';
 import { delay, switchMap, map, tap } from 'rxjs/operators';
 import { StorageEntries } from './storage.models';
+import { LogTask } from '../logger/logger.flow';
 
-export class LogTask extends ZTask {
-  name = '[Log Task] Log';
-  requires = { logTaskMessages: null };
-  provide = { logTaskMessagesLogged: null };
-  inject = { loggerService: null };
-  execute(requires: ZDictionary) {
-    const logger = this.inject.loggerService;
-    const logTaskMessages = [
-      `${this.name}: `,
-      ...requires.logTaskMessages
-    ];
-    return logger.log(...logTaskMessages).pipe(
-      map(() => ({logTaskMessagesLogged: logTaskMessages}))
-    );
-  }
-  revert() {
-    return of(new ZDictionary);
-  }
-}
-export class ErrorTask extends ZTask {
-  name = '[Log Task] Error';
-  requires = { errorTaskMessages: null };
-  provide = { errorTaskMessagesLogged: null };
-  inject = { loggerService: null };
-  execute(requires: ZDictionary) {
-    const logger = this.inject.loggerService;
-    const errorTaskMessages = [
-      `${this.name}: `,
-      ...requires.errorTaskMessages
-    ];
-    return logger.error(...errorTaskMessages).pipe(
-      map(() => ({errorTaskMessagesLogged: errorTaskMessages}))
-    );
-  }
-  revert() {
-    return of(new ZDictionary);
-  }
-}
-export class StorageLoadTask extends ZTask {
+export class LoadStorageTask extends ZTask {
   name = '[Storage Task] Load';
+  inject = { storageService: null };
   requires = { localStorageLoadKeys: null };
   provide = { localStorageEntries: null };
-  inject = { storageService: null };
-  execute(requires: ZDictionary) {
+  execute(requires: ZDictionary): Observable<ZDictionary> {
     const storage = this.inject.storageService;
     const localStorageLoadKeys = requires.localStorageLoadKeys || [];
     return storage.getAll(localStorageLoadKeys).pipe(
       map((entries: StorageEntries) => ({localStorageEntries: entries})),
-      tap(r => console.log('R: ', r)),
     );
-    /*
-    const localStorageEntries = {};
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (localStorageLoadKeys.length === 0 || localStorageLoadKeys.includes(key)) {
-        localStorageEntries[key] = localStorage.getItem(key);
-      }
-    }
-    return ;
-    */
   }
-  revert() {
-    return of(new ZDictionary);
+}
+export class LogBeforeLoadStorageTask extends LogTask {
+  name = '[Storage Task] Log Before Load';
+}
+export class LogAfterLoadStorageTask extends LogTask {
+  name = '[Storage Task] Log After Load';
+  requires = { logTaskMessages: null, localStorageEntries: null};
+  execute(requires: ZDictionary): Observable<ZDictionary> {
+    const logTaskMessages = [...requires.logTaskMessages, requires.localStorageEntries];
+    return super.execute({logTaskMessages});
   }
+}
+export class LoadStorageAndLogBeforeSplitterTask extends ZTask {
+  name = '[Storage Task] Split Load and Log Before';
 }
 
 export class StorageFlowLoadAndLog extends ZGraphFlow {
-  name = '[Storage Flow] Load And Log';
+  name = '[Storage Flow] Load Storage and Log Before and After';
   provide = { logTaskMessages: [['Loading Local Storage'], ['Local Storage Loaded']] };
 }
-export function loadFlowFactory(): StorageFlowLoadAndLog {
+export function loadAndLogFlowFactory(): StorageFlowLoadAndLog {
   const storageFlowLoad = new StorageFlowLoadAndLog;
-  storageFlowLoad.add(new StorageLoadTask);
-  storageFlowLoad.add(new LogTask);
-  storageFlowLoad.link(new ZLink('[Storage Task] Load', '[Log Task] Log'));
+  storageFlowLoad.add(new LoadStorageAndLogBeforeSplitterTask);
+  storageFlowLoad.add(new LogBeforeLoadStorageTask);
+  storageFlowLoad.add(new LoadStorageTask);
+  storageFlowLoad.add(new LogAfterLoadStorageTask);
+  storageFlowLoad.link(new ZLink('[Storage Task] Split Load and Log Before', '[Storage Task] Log Before Load'));
+  storageFlowLoad.link(new ZLink('[Storage Task] Split Load and Log Before', '[Storage Task] Load'));
+  storageFlowLoad.link(new ZLink('[Storage Task] Load', '[Storage Task] Log After Load'));
   return storageFlowLoad;
 }
 
 export function test(services: ZDictionary) {
-  const engine = new ZEngine(services, loadFlowFactory());
-  engine.execution$.subscribe(n => console.log('next: ', n), e => console.log('error: ', e), () => console.log('complete'));
+  const engine = new ZEngine(services, loadAndLogFlowFactory());
+  engine.execution$.subscribe();
 }
