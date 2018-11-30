@@ -1,9 +1,9 @@
-import { ZDictionary } from "./z-dictionary.model";
+import { ZDictionary } from './z-dictionary.model';
 
 export abstract class ZAtom {
-    abstract version: string;
+    version: string;
     saveAs: ZDictionary;
-    priority: number = 0;
+    priority = 0;
     constructor(
         public name?: string,
         public provides?: ZDictionary,
@@ -15,10 +15,10 @@ export abstract class ZAtom {
         public ignoreList?: ZDictionary,
         public autoExtract: boolean = true,
     ) {}
-    abstract preExecute(): void;
-    abstract execute(args: any[], kwargs: ZDictionary): any;
-    abstract postExecute(): void;
-    abstract preRevert(): void;
-    abstract revert(args: any[], kwargs: ZDictionary): any;
-    abstract postRevert(): void;
+    preExecute?(): void {}
+    postExecute?(): void {}
+    preRevert?(): void {}
+    postRevert?(): void {}
+    execute?(args: any[], kwargs: ZDictionary, ...others: any[]): any {}
+    revert?(args: any[], kwargs: ZDictionary, ...others: any[]): any {}
 }

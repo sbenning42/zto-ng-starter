@@ -31,7 +31,7 @@ export class StorageService {
     const entries = {};
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
-      if (keys === undefined || (keys !== undefined && keys.includes(key))) {
+      if (keys === undefined || keys.length === 0 || (keys !== undefined && keys.includes(key))) {
         entries[key] = localStorage.getItem(key);
       }
     }
