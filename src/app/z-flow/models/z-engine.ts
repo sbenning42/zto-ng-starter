@@ -1,6 +1,6 @@
 import { ZFlow } from './z-flow';
 import { ZStep } from './z-step';
-import { Observable, empty, zip, of, concat, defer } from 'rxjs';
+import { Observable, empty, of, concat, defer } from 'rxjs';
 import { tap, switchMap, first, map, startWith } from 'rxjs/operators';
 import { ZGraph } from './z-graph';
 import { ZNode } from './z-node';
