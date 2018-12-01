@@ -8,6 +8,8 @@ import { ZtoDictionnary } from '../helpers/zto-dictionnary.model';
 import { ZtoTaskflowFlowStatus } from '../pattern-components/flow/zto-taskflow-flow-status.enum';
 import { take, map, switchMap, tap, mergeMap, reduce, scan, catchError } from 'rxjs/operators';
 import { Observable, empty, concat, defer, of, zip, merge, throwError } from 'rxjs';
+import { ZtoNodeMode } from '../helpers/graph/zto-node-mode.enum';
+import { ZtoTaskflowAtomMode } from '../pattern-components/atom/zto-taskflow-atom-mode.enum';
 
 export type ZtoTaskflowAtomGraph = ZtoGraph<ZtoTaskflowAtom>;
 export type ZtoTaskflowAtomNode = ZtoNode<ZtoTaskflowAtom>;
@@ -29,9 +31,10 @@ export class ZtoTaskflowEngine {
     const resolveINJECT = (item: ZtoTaskflowAtom) => (item.INJECT || []).forEach(symbol => item.injected[symbol] = this.inject[symbol]);
     const selectorFactory = (item: ZtoTaskflowAtom) =>
       (node: ZtoTaskflowAtomNode) => item.id === node.item.id;
+    const modeFactory = (item: ZtoTaskflowAtom) => item.MODE === ZtoTaskflowAtomMode.all ? ZtoNodeMode.all : ZtoNodeMode.race;
     this.flow.atoms.forEach(resolveINJECT);
-    this.flowGraph = new ZtoGraph(flow.atoms, flow.links, selectorFactory);
-    console.log('New ZtoGraph created from flow: ', this.flowGraph, flow);
+    this.flowGraph = new ZtoGraph(flow.atoms, flow.links, selectorFactory, modeFactory);
+    console.log('New ZtoGraph created from flow: ', flow.TYPE, this.flowGraph);
     this.prepare();
     this.run$ = this.create();
   }
@@ -114,27 +117,48 @@ export class ZtoTaskflowEngine {
   }
 
   private traverse(atomNode: ZtoTaskflowAtomNode): Observable<ZtoDictionnary> {
-    const applyForChild = (child: ZtoTaskflowAtomNode) => this.traverse(child);
-    return concat(
-      defer(() => this.runAtom(atomNode.item)),
-      merge(...atomNode.childs.map(applyForChild)),
-    );
+    const traverseChild = (child: ZtoTaskflowAtomNode) => this.traverse(child);
+    return defer(() => {
+      if (atomNode.mode === ZtoNodeMode.race) {
+        if (atomNode.visited > 0) {
+          return empty();
+        } else {
+          atomNode.visited += 1;
+        }
+      } else if (atomNode.mode === ZtoNodeMode.all) {
+        atomNode.visited += 1;
+        if (atomNode.visited < atomNode.parents.length) {
+          return empty();
+        }
+      }
+      return concat(
+        defer(() => this.runAtomNode(atomNode)),
+        merge(...atomNode.childs.map(traverseChild)),
+      );
+    });
   }
 
-  private runAtom(atom: ZtoTaskflowAtom): Observable<ZtoDictionnary> {
-    const { id, TYPE } = this.flow;
+  private runAtomNode(atomNode: ZtoTaskflowAtomNode): Observable<ZtoDictionnary> {
+    const atom: ZtoTaskflowAtom = atomNode.item;
+    const id = this.flow.id;
     const REQUIRES = atom.REQUIRES || [];
-    const onlyRequiresEntries = ([key]: [string, any]) => REQUIRES.includes(key);
+    const REBIND = atom.REBIND || [];
+    const onlyNeededEntries = ([key]: [string, any]) => REQUIRES.includes(key)
+      || REBIND.some((rebindObj: ZtoDictionnary) => Object.keys(rebindObj).includes(key));
+    const rebind = (provide: ZtoDictionnary) => {
+      REBIND.forEach((rebindObj: ZtoDictionnary) => provide[Object.values(rebindObj)[0]] = provide[Object.keys(rebindObj)[0]]);
+      return provide;
+    };
     const entryAsDictionnaryKeys = (dict: ZtoDictionnary, [key, value]: [string, any]) => ({ ...dict, [key]: value });
     const provide$: Observable<ZtoDictionnary> = this.facade.flowContextById(id).pipe(
       take(1),
       map((flowContext: ZtoTaskflowFlowContext) => Object.entries(flowContext.PROVIDE_Aggregat)
-        .filter(onlyRequiresEntries)
+        .filter(onlyNeededEntries)
         .reduce(entryAsDictionnaryKeys, new ZtoDictionnary),
       ),
     );
     const selfExecutionProvide$ = provide$.pipe(
-      switchMap((provide: ZtoDictionnary) => atom.execute ? atom.execute(provide) : empty()),
+      switchMap((provide: ZtoDictionnary) => atom.execute ? atom.execute(rebind(provide)) : empty()),
       take(1),
       switchMap((provide: ZtoDictionnary) => this.flowContext$.pipe(
         take(1),

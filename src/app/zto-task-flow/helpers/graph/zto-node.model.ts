@@ -1,9 +1,14 @@
+import { ZtoNodeMode } from './zto-node-mode.enum';
+
 export class ZtoNode<T = any> {
 
   parents: Array<ZtoNode<T>> = [];
   childs: Array<ZtoNode<T>> = [];
 
-  constructor(public item?: T) { }
+  visited = 0;
+
+  constructor(public item?: T, public mode: ZtoNodeMode = ZtoNodeMode.race) {
+  }
 
   add(child_s: ZtoNode<T> | Array<ZtoNode<T>>) {
     const linkChild = (child: ZtoNode<T>) => {
