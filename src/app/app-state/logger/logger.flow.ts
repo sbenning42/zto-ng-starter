@@ -1,7 +1,7 @@
-import { ZTask } from "../../z-flow/models/z-task";
-import { ZDictionary } from "../../z-flow/models/z-helpers";
-import { Observable } from "rxjs";
-import { map } from "rxjs/operators";
+import { ZTask } from '../../z-flow/models/z-task';
+import { ZDictionary } from '../../z-flow/models/z-helpers';
+import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 
 export class LogTask extends ZTask {
     name = '[Log Task] Log';

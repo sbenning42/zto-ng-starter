@@ -6,6 +6,7 @@ import { SharedModule } from './shared/shared.module';
 import { HeaderModule } from './header/header.module';
 import { HomeModule } from './home/home.module';
 import { AppStateModule } from './app-state/app-state.module';
+import { ZtoTaskflowModule } from './zto-task-flow/zto-taskflow.module';
 
 @NgModule({
   declarations: [
@@ -14,9 +15,10 @@ import { AppStateModule } from './app-state/app-state.module';
   imports: [
     BrowserModule,
     SharedModule,
+    ZtoTaskflowModule,
     AppStateModule,
     HeaderModule,
-    HomeModule
+    HomeModule,
   ],
   providers: [],
   bootstrap: [AppComponent]

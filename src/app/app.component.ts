@@ -4,6 +4,7 @@ import { test } from './app-state/storage/storage.flow';
 import { StorageService } from './app-state/storage/storage.service';
 import { ZDictionary } from './z-flow/models/z-helpers';
 import { LoggerService } from './app-state/logger/logger.service';
+import { LoggerFlowFacade } from './app-state/logger/flows/logger.flows';
 
 @Component({
   selector: 'app-root',
@@ -15,8 +16,9 @@ export class AppComponent {
   constructor(
     public toast: ToastFacade,
     public storageService: StorageService,
-    public loggerService: LoggerService
+    public loggerService: LoggerService,
+    public loggerFlowFacade: LoggerFlowFacade,
   ) {
-    test(new ZDictionary({storageService, loggerService}));
+    this.loggerFlowFacade.log('Hello World');
   }
 }
