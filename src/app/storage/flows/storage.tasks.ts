@@ -3,6 +3,7 @@ import { ZtoDictionnary } from 'src/app/zto-task-flow/helpers/zto-dictionnary.mo
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { StorageEntries } from '../storage.models';
+import { ZtoTaskflowCountRetry } from 'src/app/zto-task-flow/pattern-components/retry/zto-taskflow-retry.implementations';
 
 export enum StorageTaskType {
   get = '[Storage Task] Get',
@@ -13,12 +14,14 @@ export enum StorageTaskType {
 
 export class StorageTaskGet extends ZtoTaskflowTask {
   TYPE = StorageTaskType.get;
+  DEF_PROVIDE = { retryCount: 3 };
   INJECT = ['storageService'];
-  REQUIRES = ['storageLoadKeys'];
-  PROVIDE = ['storageEntries'];
+  REQUIRES = ['storageLoadKeys', 'retryCount'];
+  PROVIDE = ['storageEntries', 'retryTime'];
+  retry = new ZtoTaskflowCountRetry;
   execute(requires: ZtoDictionnary): Observable<ZtoDictionnary> {
     const lodKeys = requires.storageLoadKeys;
-    const mapProvide = (storageEntries: StorageEntries) => ({ storageEntries });
+    const mapProvide = (storageEntries: StorageEntries) => ({ storageEntries, retryTime: 0 });
     return this.injected.storageService.getAll(lodKeys).pipe(map(mapProvide));
   }
 }

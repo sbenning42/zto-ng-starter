@@ -11,13 +11,15 @@
     <mat-card-content>
       <h3>Storage Entries</h3>
       <mat-list>
-        <mat-list-item *ngFor="let entry of entriesAsArray">
+        <mat-list-item *ngFor="let entry of entriesAsArray; let index = index">
           <section class="flex-row-cs">
             <i>{{entry[0]}}:</i>
             <span style="flex: 1"></span>
             <b>{{entry[1]}}</b>
             <span style="flex: 1"></span>
-            <button mat-button color="warn" (click)="remove([entry[0]])">DELETE</button>
+            <button mat-button color="warn" [disabled]="!removeClosed" *ngIf="removeClosed" (click)="remove(index, [entry[0]])">DELETE</button>
+            <button mat-button color="warn" *ngIf="!removeClosed && indexRemoving !== index" [disabled]="true">DELETE</button>
+            <button mat-button color="warn" *ngIf="!removeClosed && indexRemoving === index" (click)="cancelremove()">CANCEL DELETE</button>
           </section>
         </mat-list-item>
       </mat-list>

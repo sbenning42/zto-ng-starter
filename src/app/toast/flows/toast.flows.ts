@@ -45,14 +45,14 @@ export class ToastFlowFacade {
     return new ZtoTaskflowEngine(this.taskflowFacade, flow, inject, provide, options);
   }
 
-  open(message: string): Observable<ZtoDictionnary> {
+  open(message: string): ZtoTaskflowEngine {
     const engine = this.createEngine(new ToastFlowOpen, { toastMessage: message });
-    return engine.run$;
+    return engine;
   }
 
-  close(): Observable<ZtoDictionnary> {
+  close(): ZtoTaskflowEngine {
     const engine = this.createEngine(new ToastFlowClose);
-    return engine.run$;
+    return engine;
   }
 
 }

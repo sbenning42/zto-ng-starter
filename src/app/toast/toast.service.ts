@@ -9,23 +9,20 @@ import { tap } from 'rxjs/operators';
 export class ToastService {
 
   currentRef: MatSnackBarRef<SimpleSnackBar>;
-  open: boolean;
+  isOpen: boolean;
 
   constructor(public snack: MatSnackBar) { }
 
-  openSnackBar(message: string): Observable<any> {
-    if (!this.currentRef || !this.open) {
-      this.currentRef = this.snack.open(message, '', {
-        duration: 4000,
-      });
-      return this.currentRef.afterOpened();
-    }
-    return empty();
+  open(message: string): Observable<any> {
+    this.currentRef = this.snack.open(message, '', {
+      duration: 4000,
+    });
+    return this.currentRef.afterOpened().pipe(tap(() => this.isOpen = true));
   }
-  closeSnackBar(): Observable<any> {
+  close(): Observable<any> {
     if (this.currentRef && this.open) {
       this.currentRef.dismiss();
-      return this.currentRef.afterDismissed().pipe(tap(() => this.open = false));
+      return this.currentRef.afterDismissed().pipe(tap(() => this.isOpen = false));
     }
     return empty();
   }

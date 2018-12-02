@@ -46,14 +46,14 @@ export class LoggerFlowFacade {
     return new ZtoTaskflowEngine(this.taskflowFacade, flow, inject, provide, options);
   }
 
-  log(...messages: any[]): Observable<ZtoDictionnary> {
+  log(...messages: any[]): ZtoTaskflowEngine {
     const engine = this.createEngine(new LoggerFlowLog, { logMessages: messages });
-    return engine.run$;
+    return engine;
   }
 
-  error(...messages: any[]): Observable<ZtoDictionnary> {
+  error(...messages: any[]): ZtoTaskflowEngine {
     const engine = this.createEngine(new LoggerFlowError, { errorMessages: messages });
-    return engine.run$;
+    return engine;
   }
 
 }

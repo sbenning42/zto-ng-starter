@@ -9,6 +9,10 @@ import { Observable } from 'rxjs';
 import { StorageEntries } from '../storage.models';
 import { LoggerTaskLog } from 'src/app/logger/flows/logger.tasks';
 import { LoggerService } from 'src/app/logger/logger.service';
+import { ToastTaskOpen } from 'src/app/toast/flows/toast.tasks';
+import { ToastService } from 'src/app/toast/toast.service';
+import { tap } from 'rxjs/operators';
+import { StorageFacade } from '../store/storage.facade';
 
 export enum StorageFlowType {
   get = '[Storage Flow] Get',
@@ -53,54 +57,160 @@ export class StorageFlowClear extends ZtoTaskflowFlow {
 
 
 class LoggerTaskLogBefore extends LoggerTaskLog {
-  DEF_PROVIDE = { logBeforeMessages: ['Loading Local Storage ...'] };
   REBIND = [{ logBeforeMessages: 'logMessages' }];
 }
 class LoggerTaskLogAfter extends LoggerTaskLog {
+  REBIND = [{ logAfterMessages: 'logMessages' }];
+}
+
+class ToastTaskOpenBefore extends ToastTaskOpen {
+  REBIND = [{ toastBeforeMessage: 'toastMessage' }];
+}
+class ToastTaskOpenAfter extends ToastTaskOpen {
+  REBIND = [{ toastAfterMessage: 'toastMessage' }];
+}
+
+class LoggerTaskLogBeforeGet extends LoggerTaskLogBefore {
+  DEF_PROVIDE = { logBeforeMessages: ['Loading Local Storage ...'] };
+}
+class LoggerTaskLogAfterGet extends LoggerTaskLogAfter {
   DEF_PROVIDE = { logAfterMessages: ['Local Storage Load with success. Got entries: '] };
-  REQUIRES = ['logAfterMessages', 'storageEntries'];
+  REQUIRES = super.requires().concat(['storageEntries']);
   execute(requires: ZtoDictionnary): Observable<ZtoDictionnary> {
-    const logMessages = requires.logAfterMessages.concat(requires.storageEntries);
+    const logMessages = requires.logMessages.concat(requires.storageEntries);
     return super.execute({ logMessages });
   }
 }
+class ToastTaskOpenBeforeGet extends ToastTaskOpenBefore {
+  DEF_PROVIDE = { toastBeforeMessage: 'Loading Local Storage ...' };
+}
+class ToastTaskOpenAfterGet extends ToastTaskOpenAfter {
+  DEF_PROVIDE = { toastAfterMessage: 'Local Storage Load with success' };
+}
 
-/**
- * There are many way to express a flow graph.
- * There are often some subtle differences between those way.
- *
- * Here, LogStorageFlowGet extends StorageFlowGet,
- * StorageFlowGet declare it's target as it's rootAtom StorageTaskGet.
- *
- * In LogStorageFlowGet, the log part should be treated as
- * non-sensible parralelle execution.
- * So even if LoggerTaskLogAfter should be executed after
- * StorageTaskGet, the target of LogStorageFlowGet shouldn't changes.
- *
- * In the same spirit, StorageTaskGet doesn't wait for
- * LoggerTaskLogBefore to finish (
- *    as LogStorageFlowGet doens't override
- *    the rootAtom state of StorageTaskGet
- * )
- */
+class LoggerTaskLogBeforeSave extends LoggerTaskLogBefore {
+  DEF_PROVIDE = { logBeforeMessages: ['Saving Local Storage ...'] };
+}
+class LoggerTaskLogAfterSave extends LoggerTaskLogAfterGet {
+  DEF_PROVIDE = { logAfterMessages: ['Local Storage Saved with success. Got entries: '] };
+}
+class ToastTaskOpenBeforeSave extends ToastTaskOpenBefore {
+  DEF_PROVIDE = { toastBeforeMessage: 'Saving Local Storage ...' };
+}
+class ToastTaskOpenAfterSave extends ToastTaskOpenAfter {
+  DEF_PROVIDE = { toastAfterMessage: 'Local Storage Saved with success' };
+}
+
+class LoggerTaskLogBeforeRemove extends LoggerTaskLogBefore {
+  DEF_PROVIDE = { logBeforeMessages: ['Removing Entries from Local Storage ...'] };
+}
+class LoggerTaskLogAfterRemove extends LoggerTaskLogAfter {
+  DEF_PROVIDE = { logAfterMessages: ['Local Storage Removed keys with success: '] };
+  REQUIRES = super.requires().concat(['storageRemoveKeys']);
+  execute(requires: ZtoDictionnary): Observable<ZtoDictionnary> {
+    const logMessages = requires.logMessages.concat(requires.storageRemoveKeys);
+    return super.execute({ logMessages });
+  }
+}
+class ToastTaskOpenBeforeRemove extends ToastTaskOpenBefore {
+  DEF_PROVIDE = { toastBeforeMessage: 'Removing Entries from Local Storage ...' };
+}
+class ToastTaskOpenAfterRemove extends ToastTaskOpenAfter {
+  DEF_PROVIDE = { toastAfterMessage: 'Local Storage Removed keys with success' };
+}
+
+class LoggerTaskLogBeforeClear extends LoggerTaskLogBefore {
+  DEF_PROVIDE = { logBeforeMessages: ['Clearing Local Storage ...'] };
+}
+class LoggerTaskLogAfterClear extends LoggerTaskLogAfter {
+  DEF_PROVIDE = { logAfterMessages: ['Local Storage Cleared with success'] };
+}
+class ToastTaskOpenBeforeClear extends ToastTaskOpenBefore {
+  DEF_PROVIDE = { toastBeforeMessage: 'Clearing Local Storage ...' };
+}
+class ToastTaskOpenAfterClear extends ToastTaskOpenAfter {
+  DEF_PROVIDE = { toastAfterMessage: 'Local Storage Cleared with success' };
+}
+
 export class LogStorageFlowGet extends StorageFlowGet {
   constructor() {
     super();
-    const loggerTaskLogBefore = new LoggerTaskLogBefore;
-    const loggerTaskLogAfter = new LoggerTaskLogAfter;
+    const toastTaskOpenBefore = new ToastTaskOpenBeforeGet;
+    const toastTaskOpenAfter = new ToastTaskOpenAfterGet;
+    const loggerTaskLogBefore = new LoggerTaskLogBeforeGet;
+    const loggerTaskLogAfter = new LoggerTaskLogAfterGet;
+    this.add(toastTaskOpenBefore, { rootAtom: true });
     this.add(loggerTaskLogBefore, { rootAtom: true });
     this.add(loggerTaskLogAfter);
-    this.link([[this.target, loggerTaskLogAfter]]);
+    this.add(toastTaskOpenAfter);
+    this.link([
+      [this.target, loggerTaskLogAfter],
+      [this.target, toastTaskOpenAfter],
+    ]);
   }
 }
+export class LogStorageFlowSave extends StorageFlowSave {
+  constructor() {
+    super();
+    const toastTaskOpenBefore = new ToastTaskOpenBeforeSave;
+    const toastTaskOpenAfter = new ToastTaskOpenAfterSave;
+    const loggerTaskLogBefore = new LoggerTaskLogBeforeSave;
+    const loggerTaskLogAfter = new LoggerTaskLogAfterSave;
+    this.add(toastTaskOpenBefore, { rootAtom: true });
+    this.add(loggerTaskLogBefore, { rootAtom: true });
+    this.add(loggerTaskLogAfter);
+    this.add(toastTaskOpenAfter);
+    this.link([
+      [this.target, loggerTaskLogAfter],
+      [this.target, toastTaskOpenAfter],
+    ]);
+  }
+}
+export class LogStorageFlowRemove extends StorageFlowRemove {
+  constructor() {
+    super();
+    const toastTaskOpenBefore = new ToastTaskOpenBeforeRemove;
+    const toastTaskOpenAfter = new ToastTaskOpenAfterRemove;
+    const loggerTaskLogBefore = new LoggerTaskLogBeforeRemove;
+    const loggerTaskLogAfter = new LoggerTaskLogAfterRemove;
+    this.add(toastTaskOpenBefore, { rootAtom: true });
+    this.add(loggerTaskLogBefore, { rootAtom: true });
+    this.add(loggerTaskLogAfter);
+    this.add(toastTaskOpenAfter);
+    this.link([
+      [this.target, loggerTaskLogAfter],
+      [this.target, toastTaskOpenAfter],
+    ]);
+  }
+}
+export class LogStorageFlowClear extends StorageFlowClear {
+  constructor() {
+    super();
+    const toastTaskOpenBefore = new ToastTaskOpenBeforeClear;
+    const toastTaskOpenAfter = new ToastTaskOpenAfterClear;
+    const loggerTaskLogBefore = new LoggerTaskLogBeforeClear;
+    const loggerTaskLogAfter = new LoggerTaskLogAfterClear;
+    this.add(toastTaskOpenBefore, { rootAtom: true });
+    this.add(loggerTaskLogBefore, { rootAtom: true });
+    this.add(loggerTaskLogAfter);
+    this.add(toastTaskOpenAfter);
+    this.link([
+      [this.target, loggerTaskLogAfter],
+      [this.target, toastTaskOpenAfter],
+    ]);
+  }
+}
+
 
 @Injectable()
 export class StorageFlowFacade {
 
   constructor(
+    public facade: StorageFacade,
     public taskflowFacade: ZtoTaskflowFacade,
     public storageService: StorageService,
-    public loggerService: LoggerService
+    public loggerService: LoggerService,
+    public toastService: ToastService
   ) { }
 
   private createEngine(
@@ -111,32 +221,61 @@ export class StorageFlowFacade {
     const inject = {
       storageService: this.storageService,
       loggerService: this.loggerService,
+      toastService: this.toastService,
     };
     return new ZtoTaskflowEngine(this.taskflowFacade, flow, inject, provide, options);
   }
 
-  get(keys?: string[]): Observable<ZtoDictionnary> {
+  get(keys?: string[]): ZtoTaskflowEngine {
+    const onSuccess = (aggregate: ZtoDictionnary) => this.facade.load(aggregate.storageEntries);
     const engine = this.createEngine(new StorageFlowGet, { storageLoadKeys: keys });
-    return engine.run$;
+    engine.run$ = engine.run$.pipe(tap(onSuccess));
+    return engine;
   }
-  logGet(keys?: string[]): Observable<ZtoDictionnary> {
+  logGet(keys?: string[]): ZtoTaskflowEngine {
+    const onSuccess = (aggregate: ZtoDictionnary) => this.facade.load(aggregate.storageEntries);
     const engine = this.createEngine(new LogStorageFlowGet, { storageLoadKeys: keys });
-    return engine.run$;
+    engine.run$ = engine.run$.pipe(tap(onSuccess));
+    return engine;
   }
 
-  save(entries: StorageEntries): Observable<ZtoDictionnary> {
+  save(entries: StorageEntries): ZtoTaskflowEngine {
+    const onSuccess = (aggregate: ZtoDictionnary) => this.facade.save(aggregate.storageEntries);
     const engine = this.createEngine(new StorageFlowSave, { storageEntries: entries });
-    return engine.run$;
+    engine.run$ = engine.run$.pipe(tap(onSuccess));
+    return engine;
+  }
+  logSave(entries: StorageEntries): ZtoTaskflowEngine {
+    const onSuccess = (aggregate: ZtoDictionnary) => this.facade.save(aggregate.storageEntries);
+    const engine = this.createEngine(new LogStorageFlowSave, { storageEntries: entries });
+    engine.run$ = engine.run$.pipe(tap(onSuccess));
+    return engine;
   }
 
-  remove(keys?: string[]): Observable<ZtoDictionnary> {
+  remove(keys?: string[]): ZtoTaskflowEngine {
+    const onSuccess = (aggregate: ZtoDictionnary) => this.facade.remove(aggregate.storageRemoveKeys);
     const engine = this.createEngine(new StorageFlowRemove, { storageRemoveKeys: keys });
-    return engine.run$;
+    engine.run$ = engine.run$.pipe(tap(onSuccess));
+    return engine;
+  }
+  logRemove(keys?: string[]): ZtoTaskflowEngine {
+    const onSuccess = (aggregate: ZtoDictionnary) => this.facade.remove(aggregate.storageRemoveKeys);
+    const engine = this.createEngine(new LogStorageFlowRemove, { storageRemoveKeys: keys });
+    engine.run$ = engine.run$.pipe(tap(console.log), tap(onSuccess));
+    return engine;
   }
 
-  clear(): Observable<ZtoDictionnary> {
+  clear(): ZtoTaskflowEngine {
+    const onSuccess = () => this.facade.clear();
     const engine = this.createEngine(new StorageFlowClear);
-    return engine.run$;
+    engine.run$ = engine.run$.pipe(tap(onSuccess));
+    return engine;
+  }
+  logClear(): ZtoTaskflowEngine {
+    const onSuccess = () => this.facade.clear();
+    const engine = this.createEngine(new LogStorageFlowClear);
+    engine.run$ = engine.run$.pipe(tap(onSuccess));
+    return engine;
   }
 
 }

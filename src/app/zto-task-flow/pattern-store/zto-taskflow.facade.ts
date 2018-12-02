@@ -15,7 +15,7 @@ import {
   ZtoTaskflowUpdateFlowContext,
   ZtoTaskflowUpdateFlowContexts,
 } from './zto-taskflow.actions';
-import { EntityState } from '@ngrx/entity';
+import { EntityState, Update } from '@ngrx/entity';
 
 @Injectable()
 export class ZtoTaskflowFacade {
@@ -46,6 +46,14 @@ export class ZtoTaskflowFacade {
       Array.isArray(context_s)
         ? new ZtoTaskflowUpdateFlowContexts(context_s.map(context => ({ id: context.id, changes: { ...context } })))
         : new ZtoTaskflowUpdateFlowContext({ id: context_s.id, changes: { ...context_s } })
+    );
+  }
+
+  patch(update_s: Update<ZtoTaskflowFlowContext> | Array<Update<ZtoTaskflowFlowContext>>) {
+    this.store.dispatch(
+      Array.isArray(update_s)
+        ? new ZtoTaskflowUpdateFlowContexts(update_s)
+        : new ZtoTaskflowUpdateFlowContext(update_s)
     );
   }
 

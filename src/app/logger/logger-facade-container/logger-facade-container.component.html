@@ -1,0 +1,8 @@
+<app-logger-facade-presenter
+  [logClosed]="!(logRunning$|async)"
+  [errorClosed]="!(errorRunning$|async)"
+  (logEvt)="log($event)"
+  (errorEvt)="error($event)"
+  (cancelLogEvt)="cancelLog()"
+  (cancelErrorEvt)="cancelError()"
+></app-logger-facade-presenter>

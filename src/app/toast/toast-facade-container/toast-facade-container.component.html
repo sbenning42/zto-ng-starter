@@ -1,0 +1,8 @@
+<app-toast-facade-presenter
+  [openClosed]="(!openRunner) || (openRunner && openRunner.runFinish)"
+  [closeClosed]="(!closeRunner) || (closeRunner && closeRunner.runFinish)"
+  (openEvt)="open($event)"
+  (closeEvt)="close()"
+  (cancelOpenEvt)="cancelOpen()"
+  (cancelCloseEvt)="cancelClose()"
+></app-toast-facade-presenter>

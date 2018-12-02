@@ -6,10 +6,13 @@ import { ZtoTaskflowFacade } from '../pattern-store/zto-taskflow.facade';
 import { ZtoTaskflowFlowContext } from '../pattern-store/zto-taskflow.state';
 import { ZtoDictionnary } from '../helpers/zto-dictionnary.model';
 import { ZtoTaskflowFlowStatus } from '../pattern-components/flow/zto-taskflow-flow-status.enum';
-import { take, map, switchMap, tap, mergeMap, reduce, scan, catchError } from 'rxjs/operators';
-import { Observable, empty, concat, defer, of, zip, merge, throwError } from 'rxjs';
+import { take, map, switchMap, tap, reduce, scan, catchError, takeUntil, filter, takeWhile, startWith } from 'rxjs/operators';
+import { Observable, empty, concat, defer, of, zip, merge, throwError, Subject } from 'rxjs';
 import { ZtoNodeMode } from '../helpers/graph/zto-node-mode.enum';
 import { ZtoTaskflowAtomMode } from '../pattern-components/atom/zto-taskflow-atom-mode.enum';
+import { ZtoTaskflowTask } from '../pattern-components/task/zto-taskflow-task.abstract';
+import { ZtoTaskflowRetryDecision } from '../pattern-components/retry/zto-taskflow-retry-decision.enum';
+import { ZtoTaskflowHistory } from '../pattern-components/history/zto-taskflow-history.model';
 
 export type ZtoTaskflowAtomGraph = ZtoGraph<ZtoTaskflowAtom>;
 export type ZtoTaskflowAtomNode = ZtoNode<ZtoTaskflowAtom>;
@@ -19,7 +22,18 @@ export class ZtoTaskflowEngine {
   private flowGraph: ZtoTaskflowAtomGraph;
   private flowContext$: Observable<ZtoTaskflowFlowContext>;
 
+  private cancels: Subject<void> = new Subject;
+  private _cancels$: Observable<void> = this.cancels.asObservable();
+  cancels$: Observable<void> = this._cancels$.pipe(take(1));
+
   run$: Observable<ZtoDictionnary>;
+
+  private _runFinish = false;
+  get runFinish(): boolean {
+    return this._runFinish;
+  }
+
+  readonly id: string = this.flow.id;
 
   constructor(
     private facade: ZtoTaskflowFacade,
@@ -62,7 +76,7 @@ export class ZtoTaskflowEngine {
       ...aggregats.PROVIDE_Aggregat,
       ...this.provide
     };
-    this.facade.add({ id, status, TYPE, ...aggregats, PROVIDE_Aggregat: { ...aggregats.PROVIDE_Aggregat, ...this.provide } });
+    this.facade.add({ id, status, TYPE, ...aggregats });
     this.flowContext$ = this.facade.flowContextById(id);
   }
 
@@ -82,27 +96,28 @@ export class ZtoTaskflowEngine {
         tap((flowContext: ZtoTaskflowFlowContext) => {
           this.facade.update({ ...flowContext, status: ZtoTaskflowFlowStatus.resolved });
           this.facade.delete(flowContext);
+          this._runFinish = true;
         }),
         switchMap(() => empty())
       );
     });
-    const onError = () => catchError((error: Error) => {
+    const onFatalError = () => catchError((error: Error) => {
       return this.flowContext$.pipe(
         take(1),
         switchMap((flowContext: ZtoTaskflowFlowContext) => {
-          this.facade.update({
-            ...flowContext,
+          this.facade.patch({id: flowContext.id, changes: {
             status: ZtoTaskflowFlowStatus.errored,
             PROVIDE_Aggregat: {
               ...flowContext.PROVIDE_Aggregat,
-              selfFailure: {
+              FATAL_ERROR: {
                 name: error.name,
                 message: error.message,
                 stack: error.stack
               }
             }
-          });
+          }});
           this.facade.delete(flowContext);
+          this._runFinish = true;
           return throwError(error);
         })
       );
@@ -112,12 +127,16 @@ export class ZtoTaskflowEngine {
       ...provide
     });
     const flowExecution$ = this.traverse(this.flowGraph.tree).pipe(
-      onError(),
+      onFatalError(),
+      startWith(this.provide),
       this.options.steps === true
         ? scan(PROVIDE_Aggregator)
         : reduce(PROVIDE_Aggregator)
     );
-    return concat(onStart$, flowExecution$, onResolved$);
+    return concat(onStart$, flowExecution$, onResolved$).pipe(
+      takeUntil(this._cancels$),
+      // @TODO retry/revert logic
+    );
   }
 
   private traverse(atomNode: ZtoTaskflowAtomNode): Observable<ZtoDictionnary> {
@@ -155,23 +174,112 @@ export class ZtoTaskflowEngine {
     };
     const entryAsDictionnaryKeys = (dict: ZtoDictionnary, [key, value]: [string, any]) => ({ ...dict, [key]: value });
     const provide$: Observable<ZtoDictionnary> = this.facade.flowContextById(id).pipe(
+      takeWhile(() => !this.runFinish),
+      filter((flowContext: ZtoTaskflowFlowContext) => flowContext.status === ZtoTaskflowFlowStatus.running),
       take(1),
       map((flowContext: ZtoTaskflowFlowContext) => Object.entries(flowContext.PROVIDE_Aggregat)
         .filter(onlyNeededEntries)
         .reduce(entryAsDictionnaryKeys, new ZtoDictionnary),
       ),
     );
-    const selfExecutionProvide$ = provide$.pipe(
-      switchMap((provide: ZtoDictionnary) => atom.execute ? atom.execute(rebind(provide)) : empty()),
+    const updateFlowContext = (provide: ZtoDictionnary) => this.flowContext$.pipe(
       take(1),
-      switchMap((provide: ZtoDictionnary) => this.flowContext$.pipe(
-        take(1),
-        map((flowContext: ZtoTaskflowFlowContext) => {
-          this.facade.update({...flowContext, PROVIDE_Aggregat: {...flowContext.PROVIDE_Aggregat, ...provide}});
-          return provide;
+      map((flowContext: ZtoTaskflowFlowContext) => {
+        this.facade.update({ ...flowContext, PROVIDE_Aggregat: { ...flowContext.PROVIDE_Aggregat, ...provide } });
+        return provide;
+      })
+    );
+    const atomExecution = (provide: ZtoDictionnary) => atom.execute
+      ? atom.execute(rebind(provide)).pipe(
+        catchError((error: Error) => {
+          // @TODO: error should be tracked in the flowContext (eg: via history)
+          const retry = (atom as ZtoTaskflowTask).retry;
+          const descisionFactory = (innerProvide: ZtoDictionnary) => retry.onFailure(rebind(innerProvide), new ZtoTaskflowHistory);
+          const retryExecution$ = retry && retry.execute ? retry.execute(provide).pipe(switchMap(updateFlowContext)) : of({});
+          return retry ? retryExecution$.pipe(
+            switchMap((innerProvide: ZtoDictionnary) => {
+              const decision = descisionFactory(innerProvide);
+              switch (decision) {
+                case ZtoTaskflowRetryDecision.retry: {
+                  const retry$ = atomExecution(innerProvide);
+                  return retry$;
+                }
+                // @Todo implements revert logic
+                case ZtoTaskflowRetryDecision.revert:
+                case ZtoTaskflowRetryDecision.revertAll:
+                default:
+                  return throwError(error);
+              }
+            })
+          ) : throwError(error);
         })
-      ))
+      )
+      : empty();
+    const selfExecutionProvide$ = provide$.pipe(
+      switchMap(atomExecution),
+      take(1),
+      switchMap(updateFlowContext),
+      switchMap((provide: ZtoDictionnary) => this.flowContext$.pipe(
+        takeWhile(() => !this.runFinish),
+        filter((flowContext: ZtoTaskflowFlowContext) => flowContext.status === ZtoTaskflowFlowStatus.running),
+        take(1),
+        map(() => provide)
+      )),
     );
     return selfExecutionProvide$;
+  }
+
+  cancel(): Observable<void> {
+    return defer(() => this.flowContext$.pipe(
+      takeWhile(() => !this.runFinish),
+      take(1),
+      switchMap((flowContext: ZtoTaskflowFlowContext) => defer(() => {
+        if (!this.runFinish) {
+          this.cancels.next();
+          this.facade.patch({ id: flowContext.id, changes: { status: ZtoTaskflowFlowStatus.canceled } });
+          this.facade.delete(flowContext);
+          this._runFinish = true;
+        }
+        return of(undefined);
+      })),
+    ));
+  }
+
+  pause(): Observable<void> {
+    return defer(() => this.flowContext$.pipe(
+      takeWhile(() => !this.runFinish),
+      filter((flowContext: ZtoTaskflowFlowContext) => flowContext.status === ZtoTaskflowFlowStatus.running),
+      take(1),
+      switchMap((flowContext: ZtoTaskflowFlowContext) => defer(() => {
+        if (!this.runFinish) {
+          this.facade.patch({ id: flowContext.id, changes: { status: ZtoTaskflowFlowStatus.paused } });
+        }
+        return of(undefined);
+      })),
+    ));
+  }
+
+  resume(): Observable<void> {
+    return defer(() => this.flowContext$.pipe(
+      takeWhile(() => !this.runFinish),
+      filter((flowContext: ZtoTaskflowFlowContext) => flowContext.status === ZtoTaskflowFlowStatus.paused),
+      take(1),
+      switchMap((flowContext: ZtoTaskflowFlowContext) => defer(() => {
+        if (!this.runFinish) {
+          this.facade.patch({ id: flowContext.id, changes: { status: ZtoTaskflowFlowStatus.running } });
+        }
+        return of(undefined);
+      })),
+    ));
+  }
+
+  doCancel() {
+    this.cancel().subscribe();
+  }
+  doPause() {
+    this.pause().subscribe();
+  }
+  doResume() {
+    this.resume().subscribe();
   }
 }

@@ -31,6 +31,8 @@ export class StorageFacadePresenterComponent implements OnInit {
   @Output() cancelRemoveEvt: EventEmitter<void> = new EventEmitter;
   @Output() cancelClearEvt: EventEmitter<void> = new EventEmitter;
 
+  indexRemoving: number;
+
   saveForm: FormGroup;
   keyControl = new FormControl('', [Validators.required]);
   valueControl = new FormControl('', [Validators.required]);
@@ -46,7 +48,7 @@ export class StorageFacadePresenterComponent implements OnInit {
 
   load(keys?: string[]) {
     if (this.loadClosed) {
-    this.loadEvt.emit(keys);
+      this.loadEvt.emit(keys);
     }
   }
   cancelLoad() {
@@ -68,13 +70,15 @@ export class StorageFacadePresenterComponent implements OnInit {
     }
   }
 
-  remove(keys?: string[]) {
+  remove(index: number, keys?: string[]) {
     if (this.removeClosed) {
+      this.indexRemoving = index;
       this.removeEvt.emit(keys);
     }
   }
   cancelremove() {
     if (!this.removeClosed) {
+      this.indexRemoving = undefined;
       this.cancelRemoveEvt.emit();
     }
   }
