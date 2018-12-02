@@ -15,23 +15,18 @@ export enum LoggerFlowType {
 
 export class LoggerFlowLog extends ZtoTaskflowFlow {
   TYPE = LoggerFlowType.log;
+  constructor() {
+    super();
+    this.add(new LoggerTaskLog, { rootAtom: true, target: true });
+  }
 }
+
 export class LoggerFlowError extends ZtoTaskflowFlow {
   TYPE = LoggerFlowType.error;
-}
-
-export function loggerFlowLogFactory(): LoggerFlowLog {
-  const logTask = new LoggerTaskLog;
-  const logFlow = new LoggerFlowLog;
-  logFlow.add(logTask, { rootAtom: true, target: true });
-  return logFlow;
-}
-
-export function loggerFlowErrorFactory(): LoggerFlowError {
-  const errorTask = new LoggerTaskError;
-  const errorFlow = new LoggerFlowError;
-  errorFlow.add(errorTask, { rootAtom: true, target: true });
-  return errorFlow;
+  constructor() {
+    super();
+    this.add(new LoggerTaskError, { rootAtom: true, target: true });
+  }
 }
 
 @Injectable()
@@ -52,19 +47,12 @@ export class LoggerFlowFacade {
   }
 
   log(...messages: any[]): Observable<ZtoDictionnary> {
-    const engine = this.createEngine(
-      loggerFlowLogFactory(),
-      { logMessages: messages },
-      // { steps: true }
-    );
+    const engine = this.createEngine(new LoggerFlowLog, { logMessages: messages });
     return engine.run$;
   }
 
   error(...messages: any[]): Observable<ZtoDictionnary> {
-    const engine = this.createEngine(
-      loggerFlowErrorFactory(),
-      { errorMessages: messages }
-    );
+    const engine = this.createEngine(new LoggerFlowError, { errorMessages: messages });
     return engine.run$;
   }
 

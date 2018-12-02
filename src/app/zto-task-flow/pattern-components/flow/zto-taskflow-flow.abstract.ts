@@ -25,7 +25,8 @@ export abstract class ZtoTaskflowFlow extends ZtoTaskflowAtom {
     }
     this.atoms.push(...(Array.isArray(atom_s) ? atom_s : [atom_s]));
     if (options.rootAtom) {
-      console.log('Create link between: ', [this, atom_s]);
+      // A flow may be add in another flow as a subflow, that's why a flow should
+      // act as a parallele splitter for all of it's first level childs
       this.link(
         Array.isArray(atom_s)
           ? atom_s.map(atom => ([this, atom] as [ZtoTaskflowAtom, ZtoTaskflowAtom]))

@@ -31,4 +31,8 @@ export abstract class ZtoTaskflowAtom {
     return empty();
   }
 
+  requires(): Array<string> {
+    return this.REQUIRES;
+  }
+
 }

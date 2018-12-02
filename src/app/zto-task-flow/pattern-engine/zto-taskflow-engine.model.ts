@@ -57,7 +57,11 @@ export class ZtoTaskflowEngine {
       ...Object.entries(acc).reduce(aggregateEachToken(mapAtom), new ZtoDictionnary)
     });
     const aggregats = this.flow.atoms.map(mapAtoms).reduce(aggregateEachTokenOfMapAtoms);
-    aggregats.PROVIDE_Aggregat = { ...aggregats.PROVIDE_Aggregat, ...this.provide };
+    aggregats.PROVIDE_Aggregat = {
+      ...aggregats.DEF_PROVIDE_Aggregat,
+      ...aggregats.PROVIDE_Aggregat,
+      ...this.provide
+    };
     this.facade.add({ id, status, TYPE, ...aggregats, PROVIDE_Aggregat: { ...aggregats.PROVIDE_Aggregat, ...this.provide } });
     this.flowContext$ = this.facade.flowContextById(id);
   }
@@ -162,9 +166,9 @@ export class ZtoTaskflowEngine {
       take(1),
       switchMap((provide: ZtoDictionnary) => this.flowContext$.pipe(
         take(1),
-        switchMap((flowContext: ZtoTaskflowFlowContext) => {
+        map((flowContext: ZtoTaskflowFlowContext) => {
           this.facade.update({...flowContext, PROVIDE_Aggregat: {...flowContext.PROVIDE_Aggregat, ...provide}});
-          return of(provide);
+          return provide;
         })
       ))
     );

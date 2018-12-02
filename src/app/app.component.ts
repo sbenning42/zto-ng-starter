@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import { LoggerFlowFacade } from './logger/flows/logger.flows';
+import { StorageFlowFacade } from './storage/flows/storage.flows';
 
 @Component({
   selector: 'app-root',
@@ -8,10 +8,7 @@ import { LoggerFlowFacade } from './logger/flows/logger.flows';
 })
 export class AppComponent {
   title = 'zto-intent-starter';
-  constructor(
-    public loggerFlowFacade: LoggerFlowFacade,
-  ) {
-    this.loggerFlowFacade.log('Hello World').subscribe();
-    this.loggerFlowFacade.error('Bye World').subscribe();
+  constructor(public storage: StorageFlowFacade) {
+    this.storage.logGet().subscribe();
   }
 }
