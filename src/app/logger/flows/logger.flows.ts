@@ -1,12 +1,10 @@
 import { Injectable } from '@angular/core';
 import { LoggerService } from '../logger.service';
 import { LoggerTaskLog, LoggerTaskError } from './logger.tasks';
-import { ZtoTaskflowEngine, ZtoTaskflowAtomGraph } from '../../zto-task-flow/pattern-engine/zto-taskflow-engine.model';
+import { ZtoTaskflowEngine } from '../../zto-task-flow/pattern-engine/zto-taskflow-engine.model';
 import { ZtoTaskflowFacade } from '../../zto-task-flow/pattern-store/zto-taskflow.facade';
 import { ZtoTaskflowFlow } from 'src/app/zto-task-flow/pattern-components/flow/zto-taskflow-flow.abstract';
 import { ZtoDictionnary } from 'src/app/zto-task-flow/helpers/zto-dictionnary.model';
-import { Observable } from 'rxjs';
-import { ZtoTaskflowAtomMode } from 'src/app/zto-task-flow/pattern-components/atom/zto-taskflow-atom-mode.enum';
 
 export enum LoggerFlowType {
   log = '[Logger Flow] Log',
