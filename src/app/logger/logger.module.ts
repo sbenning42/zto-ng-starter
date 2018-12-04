@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { LoggerService } from './logger.service';
 import { LoggerFacadePresenterComponent } from './logger-facade-presenter/logger-facade-presenter.component';
 import { SharedModule } from 'src/app/shared/shared.module';
-import { LoggerFlowFacade } from './flows/logger.flows';
+import { LoggerFlowFacade } from './z-flow/logger-flow.facade';
 import { LoggerFacadeContainerComponent } from './logger-facade-container/logger-facade-container.component';
 
 @NgModule({

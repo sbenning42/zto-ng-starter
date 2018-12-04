@@ -31,7 +31,7 @@ export class ZFlowStoreService {
     this.store.dispatch(new ZFlowContextRemove(id));
   }
 
-  updateGlobalDataStore(update: Update<ZDictionnary>) {
-    this.store.dispatch(new ZFlowGlobalDataPoolUpdate(update));
+  updateGlobalDataStore(dataPool: Partial<ZDictionnary>) {
+    this.store.dispatch(new ZFlowGlobalDataPoolUpdate(dataPool));
   }
 }

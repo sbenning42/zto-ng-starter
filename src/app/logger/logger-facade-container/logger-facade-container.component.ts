@@ -1,7 +1,14 @@
 import { Component, OnInit } from '@angular/core';
 import { Observable } from 'rxjs';
-import { LoggerFlowFacade } from '../flows/logger.flows';
+import { LoggerFlowFacade } from '../z-flow/logger-flow.facade';
 import { ZtoTaskflowEngine } from 'src/app/zto-task-flow/pattern-engine/zto-taskflow-engine.model';
+import { ZFlowEngine } from '../../z-flow-redux/models/z-flow-engine';
+
+const trackLifeCycleObserver = {
+  next: next => console.log('Got next: ', next),
+  error: error => console.error('Got error: ', error),
+  complete: () => console.log('Got complete'),
+};
 
 @Component({
   selector: 'app-logger-facade-container',
@@ -16,11 +23,23 @@ export class LoggerFacadeContainerComponent implements OnInit {
   logRunner: ZtoTaskflowEngine;
   errorRunner: ZtoTaskflowEngine;
 
-  constructor(public logger: LoggerFlowFacade) { }
+  logEngine: ZFlowEngine;
+  errorEngine: ZFlowEngine;
+
+  constructor(public facade: LoggerFlowFacade) { }
 
   ngOnInit() {
   }
 
+  log(messages: any[]) {
+    this.logEngine = this.facade.log(messages);
+    this.logEngine.start().subscribe(trackLifeCycleObserver);
+  }
+  error(messages: any[]) {
+    this.errorEngine = this.facade.error(messages);
+    return this.errorEngine;
+  }
+  /*
   log(messages: any[]) {
     this.logRunner = this.logger.log(...messages);
     this.logRunner.run$.subscribe();
@@ -36,5 +55,6 @@ export class LoggerFacadeContainerComponent implements OnInit {
   cancelError() {
     this.errorRunner.doCancel();
   }
+  */
 
 }

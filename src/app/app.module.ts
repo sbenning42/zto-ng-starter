@@ -14,6 +14,7 @@ import { environment } from 'src/environments/environment';
 import { LoggerModule } from './logger/logger.module';
 import { StorageModule } from './storage/storage.module';
 import { ToastModule } from './toast/toast.module';
+import { ZFlowReduxModule } from './z-flow-redux/z-flow-redux.module';
 
 @NgModule({
   declarations: [
@@ -26,6 +27,7 @@ import { ToastModule } from './toast/toast.module';
     EffectsModule.forRoot([]),
     StoreRouterConnectingModule.forRoot(),
     StoreDevtoolsModule.instrument({maxAge: 100, logOnly: !environment.production}),
+    ZFlowReduxModule,
     ZtoTaskflowModule,
     LoggerModule,
     StorageModule,

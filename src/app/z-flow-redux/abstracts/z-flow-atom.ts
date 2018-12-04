@@ -14,6 +14,7 @@ export abstract class ZFlowAtom {
   defProvide?: ZDictionnary;
   asyncMode?: ZFlowAtomAsyncMode;
   injectSymbols?: string[];
+  injector: ZDictionnary = new ZDictionnary;
 
   requiresSymbols?: string[];
   provideSymbols?: string[];

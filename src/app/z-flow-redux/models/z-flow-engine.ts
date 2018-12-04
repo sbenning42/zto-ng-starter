@@ -9,10 +9,11 @@ import { ZFlowStoreService } from '../services/z-flow-store.service';
 import { tap, catchError, reduce } from 'rxjs/operators';
 
 const HELP = {
-  mapReduceArrSelector: (selector: string, arrObj: ZDictionnary[]) =>
+  mapReduceArrSelector: (selector: string = '', arrObj: ZDictionnary[] = []) =>
     arrObj.map(obj => obj[selector])
-    .reduce((arr: ZDictionnary[], dict: ZDictionnary) => ([...arr, dict])),
-  arrObjToObj: (arr: ZDictionnary[]) =>
+    .filter((dict: ZDictionnary) => !!dict)
+    .reduce((arr: ZDictionnary[], dict: ZDictionnary) => ([...arr, dict]), []),
+  arrObjToObj: (arr: ZDictionnary[] = []) =>
     arr.reduce((obj: ZDictionnary[], dict: ZDictionnary) => ({ ...obj, ...dict }), new ZDictionnary),
 };
 
@@ -72,6 +73,7 @@ export class ZFlowEngine {
 
   private addContext() {
     this.store.addFlowContext(this.context);
+    this.store.updateGlobalDataStore(this.context.localDataPool);
   }
   private updateContext() {
     this.store.updateFlowContext({
@@ -80,6 +82,7 @@ export class ZFlowEngine {
         ...this.context
       }
     });
+    this.store.updateGlobalDataStore(this.context.localDataPool);
   }
   private removeContext() {
     this.store.removeFlowContext(this.context.id);
@@ -108,7 +111,7 @@ export class ZFlowEngine {
       return throwError(error);
     };
     const traverseGraph = (node: ZFlowTaskNode) => defer(() => concat(
-      this.runTask(node.task),
+      defer(() => this.runTask(node.task)),
       merge(...node.childs.map(traverseGraph))
     ));
     const flowExection$ = defer(() => {
@@ -128,13 +131,19 @@ export class ZFlowEngine {
       const findSymbol = (symbol: string) => ([sym]: [string, string]) => symbol === sym;
       const mapRebind = ([, to]: [string, string]) => to;
       const rebind = (symbol: string) => {
-        const rebinded = task.rebindSymbols.find(findSymbol(symbol));
+        const rebinded = task.rebindSymbols ? task.rebindSymbols.find(findSymbol(symbol)) : undefined;
         return rebinded ? mapRebind(rebinded) : symbol;
       };
+      const onlyNeeded = ([symbol]: [string, any]) => task.injectSymbols.includes(symbol);
+      const makeInjector = (injector: ZDictionnary, [symbol, inject]: [string, any]) => ({...injector, [symbol]: inject});
+      task.injector = Object.entries(this.injector)
+        .filter(onlyNeeded)
+        .reduce(makeInjector, new ZDictionnary);
       const requires = task.requiresSymbols
         .map(symbol => rebind(symbol))
         .map(symbol => [symbol, this.context.localDataPool[symbol]])
         .reduce((localDataPool, [symbol, data]) => ({ ...localDataPool, [symbol]: data }));
+      console.log('Got requires: ', requires, ' for localDataPool: ', this.context);
       const onExecuted = (provide?: ZDictionnary) => this.step(provide);
       return task.execute(requires).pipe(tap(onExecuted));
     }) : empty();
@@ -142,9 +151,11 @@ export class ZFlowEngine {
   }
 
   start(): Observable<ZDictionnary> {
-    this.context = this.manager.start();
-    this.updateContext();
-    return this.run();
+    return defer(() => {
+      this.context = this.manager.start();
+      this.updateContext();
+      return this.run();
+    });
   }
   pause() {
     this.context = this.manager.pause();
