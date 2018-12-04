@@ -101,25 +101,26 @@ export class ZFlowEngine {
   }
 
   private run(): Observable<ZDictionnary> {
-    const onStart$ = defer(() => {
-      this.start();
-      return empty();
-    });
+    const onStart = () => this.start();
+    const onResolve = (result: ZDictionnary) => this.resolve(result);
     const onError = (error: Error) => {
       this.error(error);
       return throwError(error);
-    };
-    const onResolve = (result: ZDictionnary) => {
-      this.resolve(result);
     };
     const traverseGraph = (node: ZFlowTaskNode) => defer(() => concat(
       this.runTask(node.task),
       merge(...node.childs.map(traverseGraph))
     ));
-    const flowExection$ = traverseGraph(this.graph.tree).pipe(
-      reduce((provide: ZDictionnary, partialProvide: ZDictionnary) => ({ ...provide, ...partialProvide }))
-    );
-    return defer(() => concat(onStart$, flowExection$).pipe(tap(onResolve), catchError(onError)));
+    const flowExection$ = defer(() => {
+      onStart();
+      return traverseGraph(this.graph.tree).pipe(
+        reduce((provide: ZDictionnary, partialProvide: ZDictionnary) => ({ ...provide, ...partialProvide })),
+        tap(onResolve),
+        // @TODO handle pause/resume/retry/revert logic
+        catchError(onError)
+      );
+    });
+    return defer(() => flowExection$);
   }
 
   private runTask(task: ZFlowTask): Observable<ZDictionnary> {
