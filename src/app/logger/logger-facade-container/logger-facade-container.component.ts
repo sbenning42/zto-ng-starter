@@ -1,20 +1,17 @@
 import { Component, OnInit } from '@angular/core';
-import { Observable } from 'rxjs';
 import { LoggerFlowFacade } from '../z-flow/logger-flow.facade';
-import { ZtoTaskflowEngine } from 'src/app/zto-task-flow/pattern-engine/zto-taskflow-engine.model';
 import { ZFlowEngine } from '../../z-flow-redux/models/z-flow-engine';
-import { pluck, filter, map, takeWhile } from 'rxjs/operators';
-import { ZFlowContext, ZFlowContextStatus } from '../../z-flow-redux/models/z-flow-context';
+import { Observable } from 'rxjs';
 
-const trackLifeCycleObserver = (engine: ZFlowEngine) => ({
+const trackFlowLifeCycleObserver = (engine: ZFlowEngine) => ({
   next: next => {
-    // console.log('Got next: ', next);
+    console.log(`Component for Engine ${engine.flow.type} Got Flow Next: `, next);
   },
   error: error => {
-    // console.error('Got error: ', error);
+    console.error(`Component for Engine ${engine.flow.type} Got Flow Error: `, error);
   },
   complete: () => {
-    console.log('Got complete');
+    console.log(`Component for Engine ${engine.flow.type} Got Flow Complete`);
     engine.drop();
   },
 });
@@ -26,15 +23,6 @@ const trackLifeCycleObserver = (engine: ZFlowEngine) => ({
 })
 export class LoggerFacadeContainerComponent implements OnInit {
 
-  logRunning$: Observable<any>;
-  errorRunning$: Observable<any>;
-
-  logPaused$: Observable<any>;
-  errorPaused$: Observable<any>;
-
-  logRunner: ZtoTaskflowEngine;
-  errorRunner: ZtoTaskflowEngine;
-
   logEngine: ZFlowEngine;
   errorEngine: ZFlowEngine;
 
@@ -45,66 +33,52 @@ export class LoggerFacadeContainerComponent implements OnInit {
 
   log(messages: any[]) {
     this.logEngine = this.facade.log(...messages);
-    this.logRunning$ = this.logEngine.context$.pipe(
-      takeWhile((ctx: ZFlowContext) => !!ctx),
-      map((ctx: ZFlowContext) => ctx && ctx.status === ZFlowContextStatus.running || ctx.status === ZFlowContextStatus.paused),
+    this.logEngine.start().subscribe(
+      trackFlowLifeCycleObserver(this.logEngine)
     );
-    this.logPaused$ = this.logEngine.context$.pipe(
-      takeWhile((ctx: ZFlowContext) => !!ctx),
-      map((ctx: ZFlowContext) => ctx && ctx.status === ZFlowContextStatus.paused),
-    );
-    this.logEngine.start().subscribe(trackLifeCycleObserver(this.logEngine));
+  }
+  cancelLog() {
+    if (!this.logEngine) {
+      return;
+    }
+    this.logEngine.cancel();
+  }
+  pauseLog() {
+    if (!this.logEngine) {
+      return;
+    }
+    this.logEngine.pause();
+  }
+  resumeLog() {
+    if (!this.logEngine) {
+      return;
+    }
+    this.logEngine.resume();
   }
 
   error(messages: any[]) {
     this.errorEngine = this.facade.error(...messages);
-    this.errorRunning$ = this.errorEngine.context$.pipe(
-      takeWhile((ctx: ZFlowContext) => !!ctx),
-      map((ctx: ZFlowContext) => ctx && ctx.status === ZFlowContextStatus.running || ctx.status === ZFlowContextStatus.paused),
+    this.errorEngine.start().subscribe(
+      trackFlowLifeCycleObserver(this.errorEngine)
     );
-    this.errorPaused$ = this.errorEngine.context$.pipe(
-      takeWhile((ctx: ZFlowContext) => !!ctx),
-      map((ctx: ZFlowContext) => ctx && ctx.status === ZFlowContextStatus.paused),
-    );
-    this.errorEngine.start().subscribe(trackLifeCycleObserver(this.errorEngine));
-  }
-  cancelLog() {
-    this.logEngine.cancel();
-    console.log('Flow canceled.');
-  }
-  pauseLog() {
-    this.logEngine.pause();
-    console.log('Flow paused.');
-  }
-  resumeLog() {
-    this.logEngine.resume();
-    console.log('Flow resumed.');
   }
   cancelError() {
+    if (!this.errorEngine) {
+      return;
+    }
     this.errorEngine.cancel();
-    console.log('Flow canceled.');
   }
   pauseError() {
+    if (!this.errorEngine) {
+      return;
+    }
     this.errorEngine.pause();
-    console.log('Flow paused.');
   }
   resumeError() {
+    if (!this.errorEngine) {
+      return;
+    }
     this.errorEngine.resume();
-    console.log('Flow resumed.');
   }
-  /*
-  log(messages: any[]) {
-    this.logRunner = this.logger.log(...messages);
-    this.logRunner.run$.subscribe();
-  }
-  error(messages: any[]) {
-    this.errorRunner = this.logger.error(...messages);
-    this.errorRunner.run$.subscribe();
-  }
-
-  cancelError() {
-    this.errorRunner.doCancel();
-  }
-  */
 
 }

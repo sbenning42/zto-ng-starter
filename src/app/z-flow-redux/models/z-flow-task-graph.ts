@@ -48,13 +48,4 @@ export class ZFlowTaskGraph {
     flow.links.map(mapLink).forEach(resolveLink);
     this.tree = nodes[0];
   }
-  traverseApply(func: (task: ZFlowTask) => boolean) {
-    this.recTraverseApply(this.tree, func);
-  }
-  recTraverseApply(node: ZFlowTaskNode, func: (task: ZFlowTask) => boolean) {
-    if (!func(node.task)) {
-      return;
-    }
-    node.childs.forEach((child: ZFlowTaskNode) => this.recTraverseApply(child, func));
-  }
 }

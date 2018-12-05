@@ -1,14 +1,20 @@
 <app-logger-facade-presenter
-  [logClosed]="!logRunning$ || !(logRunning$|async)"
-  [errorClosed]="!errorRunning$ || !(errorRunning$|async)"
-  [logPaused]="logPaused$|async"
-  [errorPaused]="errorPaused$|async"
+
+  [logClosed]="!logEngine || (!(logEngine.isRunning$|async) && !(logEngine.isPaused$|async))"
+  [logPaused]="logEngine && (logEngine.isPaused$|async)"
+
   (logEvt)="log($event)"
-  (errorEvt)="error($event)"
-  (cancelLogEvt)="cancelLog()"
-  (cancelErrorEvt)="cancelError()"
   (pauseLogEvt)="pauseLog()"
-  (pauseErrorEvt)="pauseError()"
   (resumeLogEvt)="resumeLog()"
+  (cancelLogEvt)="cancelLog()"
+
+
+  [errorClosed]="!errorEngine || !(errorEngine.isRunning$|async)"
+  [errorPaused]="errorEngine && (errorEngine.isPaused$|async)"
+
+  (errorEvt)="error($event)"
+  (pauseErrorEvt)="pauseError()"
   (resumeErrorEvt)="resumeError()"
+  (cancelErrorEvt)="cancelError()"
+
 ></app-logger-facade-presenter>

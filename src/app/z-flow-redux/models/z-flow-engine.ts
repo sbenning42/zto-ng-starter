@@ -6,20 +6,39 @@ import { ZFlowTaskGraph, ZFlowTaskNode, ZFlowTaskNodeTraverseMode } from './z-fl
 import { ZDictionnary } from '../helpers/z-tools';
 import { ZFlowTask } from '../abstracts/z-flow-task';
 import { ZFlowStoreService } from '../services/z-flow-store.service';
-import { tap, catchError, reduce, filter, pluck, switchMap, take, takeWhile, distinctUntilChanged, finalize, concatMap, takeUntil } from 'rxjs/operators';
+import {
+  tap,
+  catchError,
+  reduce,
+  filter,
+  pluck,
+  switchMap,
+  take,
+  takeWhile,
+  distinctUntilChanged,
+  concatMap,
+  takeUntil,
+  map
+} from 'rxjs/operators';
 import { ZFlowRetryDecision } from '../abstracts/z-flow-retry';
 
 const HELP = {
+
+  objExists: function <T = any>(obj: T): boolean { return obj !== undefined; },
+  objNotExists: function <T = any>(obj: T): boolean { return obj === undefined; },
+
+  objTruthy: function (obj: any): boolean { return !!obj; },
+
+  arrObjToObj: (arr: ZDictionnary[] = []) =>
+    arr
+      .reduce((obj: ZDictionnary, dict: ZDictionnary) => ({ ...obj, ...dict }), new ZDictionnary()),
+
 
   mapReduceArrSelector: (selector: string = '', arrObj: ZDictionnary[] = []) =>
     arrObj
       .map(obj => obj[selector])
       .filter((innerArr: ZDictionnary[]) => !!innerArr)
       .reduce((arr: ZDictionnary[], innerArr: ZDictionnary[]) => [...arr, ...innerArr], []),
-
-  arrObjToObj: (arr: ZDictionnary[] = []) =>
-    arr
-      .reduce((obj: ZDictionnary, dict: ZDictionnary) => ({ ...obj, ...dict }), new ZDictionnary()),
 
 };
 
@@ -29,18 +48,36 @@ export class ZFlowEngineOptions {
 }
 
 export class ZFlowEngine {
+
   private graph: ZFlowTaskGraph;
   private context: ZFlowContext;
   private manager: ZFlowContextManager;
-  
-  context$: Observable<ZFlowContext>;
-  feedbacks$: Observable<ZFlowTaskStep>;
+
+  context$: Observable<ZFlowContext>; // does not complete
+  whileContext$: Observable<ZFlowContext>; // complete on this.drop call
+
+  messages$: Observable<ZFlowTaskStep>; // complete IF and on all this.graph.tree taskNode's messagesBus complete
+
+  // All those Observable complete on this.drop call
+  isIdle$: Observable<boolean>;
+  isRunning$: Observable<boolean>;
+  isPaused$: Observable<boolean>;
+  isCanceled$: Observable<boolean>;
+  isErrored$: Observable<boolean>;
+  isResolved$: Observable<boolean>;
+
+  idle$: Observable<ZFlowContextStatus>;
+  running$: Observable<ZFlowContextStatus>;
+  paused$: Observable<ZFlowContextStatus>;
+  canceled$: Observable<ZFlowContextStatus>;
+  errored$: Observable<ZFlowContextStatus>;
+  resolved$: Observable<ZFlowContextStatus>;
 
   constructor(
     public flow: ZFlowFlow,
     public store: ZFlowStoreService,
-    public injector: ZDictionnary = new ZDictionnary(),
-    public provide: ZDictionnary = new ZDictionnary(),
+    public injector: ZDictionnary = new ZDictionnary,
+    public provide: ZDictionnary = new ZDictionnary,
   ) {
     this.setup();
     this.addContext();
@@ -74,14 +111,46 @@ export class ZFlowEngine {
     this.manager = new ZFlowContextManager(this.context);
   }
   private makeFeedbacks() {
-    const mapFeedback = (task: ZFlowTask) => task.feedback$;
-    this.feedbacks$ = merge(...this.flow.tasks.map(mapFeedback));
+    const mapMessageBus = (task: ZFlowTask) => task.messageBus.asObservable();
+    this.messages$ = merge(...this.flow.tasks.map(mapMessageBus));
   }
 
   private addContext() {
+    const statusIs = (status: ZFlowContextStatus) => (innerStatus: ZFlowContextStatus) => status === innerStatus;
+    const statusIsIdle = statusIs(ZFlowContextStatus.idle);
+    const statusIsRunning = statusIs(ZFlowContextStatus.running);
+    const statusIsPaused = statusIs(ZFlowContextStatus.paused);
+    const statusIsCanceled = statusIs(ZFlowContextStatus.canceled);
+    const statusIsErrored = statusIs(ZFlowContextStatus.errored);
+    const statusIsResolved = statusIs(ZFlowContextStatus.resolved);
+    const pluckStatus = pluck<ZFlowContext, ZFlowContextStatus>('status');
+
     this.store.addFlowContext(this.context);
     this.updateGlobalDataStore();
+
     this.context$ = this.store.flowContextById(this.context.id);
+    this.whileContext$ = this.context$.pipe(takeWhile(HELP.objExists));
+
+    const whileStatus$ = this.whileContext$.pipe(pluckStatus);
+
+    this.isIdle$ = whileStatus$.pipe(map(statusIsIdle), distinctUntilChanged());
+    this.idle$ = whileStatus$.pipe(filter(statusIsIdle), distinctUntilChanged());
+
+    this.isRunning$ = whileStatus$.pipe(map(statusIsRunning), distinctUntilChanged());
+    this.running$ = whileStatus$.pipe(filter(statusIsRunning), distinctUntilChanged());
+
+    this.isPaused$ = whileStatus$.pipe(map(statusIsPaused), distinctUntilChanged());
+    this.paused$ = whileStatus$.pipe(filter(statusIsPaused), distinctUntilChanged());
+
+    this.isCanceled$ = whileStatus$.pipe(map(statusIsCanceled), distinctUntilChanged());
+    this.canceled$ = whileStatus$.pipe(filter(statusIsCanceled), distinctUntilChanged());
+
+    this.isErrored$ = whileStatus$.pipe(map(statusIsErrored), distinctUntilChanged());
+    this.errored$ = whileStatus$.pipe(filter(statusIsErrored), distinctUntilChanged());
+
+    this.isResolved$ = whileStatus$.pipe(map(statusIsResolved), distinctUntilChanged());
+    this.resolved$ = whileStatus$.pipe(filter(statusIsResolved), distinctUntilChanged());
+
   }
   private updateContext(updateGlobalDataStore: boolean = false) {
     this.store.updateFlowContext({ id: this.context.id, changes: { ...this.context } });
@@ -112,12 +181,12 @@ export class ZFlowEngine {
 
   private run(): Observable<ZDictionnary> {
     const onError = (error: Error) => {
-      // @TODO: this.error must be call AFTER any retry logic
+      // @PRIVATE_NOTE: this.error must be call AFTER any retry logic
       this.error(error);
       return throwError(error);
     };
-    // concat take care to run ( node -> [node.childs] ) in serie
-    // merge take care to run ( [node.childs] ) in parallele
+    // @PUBLIC_NOTE: concat take care to run ( node -> [node.childs] ) in serie
+    // @PUBLIC_NOTE: merge take care to run ( [node.childs] ) in parallele
     const recTraverseGraph = (node: ZFlowTaskNode) => {
       const run$ = defer(() => concat(
         defer(() => this.runTask(node.task)),
@@ -141,7 +210,7 @@ export class ZFlowEngine {
         })),
         // @TODO handle retry/revert logic
         catchError(onError),
-        takeUntil(this.context$.pipe(filter((ctx: ZFlowContext) => ctx.status === ZFlowContextStatus.canceled))),
+        takeUntil(this.canceled$),
       );
     });
     return flowExection$;
@@ -166,71 +235,86 @@ export class ZFlowEngine {
     };
     const onExecuted = (provide?: ZDictionnary) => this.step(provide);
     const onRetryed = (provide?: ZDictionnary) => this.step(provide, false);
+
     const isRunning = (status: ZFlowContextStatus) => status === ZFlowContextStatus.running;
     const isPaused = (status: ZFlowContextStatus) => status === ZFlowContextStatus.paused;
 
-    const taskExecution = () => {
+    const executeTask = () => {
+
       task.injector = Object.entries(this.injector).filter(onlyNeeded).reduce(aggregateEntries, {});
       const taskRequires = task.requiresSymbols.map(getSymbolLocalData).reduce(aggregateEntries, {});
-      const recRetryOrErrorLogic = (failedSourceFactory: () => Observable<ZDictionnary>) =>
-        (error: Error) => {
-          if (task.retry !== undefined) {
-            const retryExecution$ = task.retry.execute
-              ? defer(() => task.retry.execute(taskRequires).pipe(
-                take(1),
-                tap(onRetryed),
-                switchMap(() => failedSourceFactory())
-              ))
-              : of({});
-            // @TODO: Handle history here
-            const decision = task.retry.onFailure(taskRequires, {});
-            switch (decision) {
-              case ZFlowRetryDecision.retry:
-                return retryExecution$;
-              default:
-                return throwError(error);
-            }
-          }
+
+      const recRetryOrErrorLogic = (taskFactory: () => Observable<ZDictionnary>) => (error: Error) => {
+        // @TODO: Handle history here
+        if (
+          task.retry === undefined
+          || task.retry.onFailure(taskRequires, {}) !== ZFlowRetryDecision.retry
+        ) {
           return throwError(error);
-        };
-      const taskExecution$ = this.context$.pipe(
+        } else if (!task.retry.execute) {
+          return taskFactory();
+        }
+        const retry = () => task.retry.execute(taskRequires).pipe(
+          take(1),
+          tap(onRetryed),
+          switchMap(() => taskFactory())
+        );
+        return defer(retry);
+      };
+
+      const taskExecution$ = this.whileContext$.pipe(
         pluck<ZFlowContext, ZFlowContextStatus>('status'),
         distinctUntilChanged(),
-        tap((s) => console.log('Got status: ', s)),
         // task Cancel logic + Resolved or Error cancel
         // concatMap + takeWhile = inclusive takeWhile
         concatMap((status: ZFlowContextStatus) => isRunning(status) || isPaused(status) ? of(status) : of(status, null)),
         takeWhile((status: ZFlowContextStatus) => !!status),
         // pause/resume logic + thanks to switchmap (and distinctUntilChanged) NEVER will be unsubscribe in any case
         switchMap((status: ZFlowContextStatus) => (isRunning(status) ? task.execute(taskRequires) : NEVER)),
-        catchError(recRetryOrErrorLogic(() => taskExecution$)),
+        catchError(recRetryOrErrorLogic(executeTask)),
         take(1),
         tap(onExecuted),
       );
       return taskExecution$;
     };
-    return defer(taskExecution);
+
+    return defer(executeTask);
   }
 
   start(): Observable<ZDictionnary> {
+    if (this.context.status !== ZFlowContextStatus.idle) {
+      return throwError(new Error('Cannot start the same engine twice. Make a new engine instance instead.'));
+    }
+    const resolveOrNothing = () => this.context.status === ZFlowContextStatus.running
+      ? this.resolve(this.context.localDataPool)
+      : undefined;
     return defer(() => {
       this.context = this.manager.start();
       this.updateContext();
       return concat(
         this.run(),
-        defer(() => this.resolve(this.context.localDataPool)),
+        defer(resolveOrNothing),
       );
     });
   }
   pause() {
+    if (this.context.status !== ZFlowContextStatus.running) {
+      return throwError(new Error('Cannot pause a non running engine.'));
+    }
     this.context = this.manager.pause();
     this.updateContext();
   }
   resume() {
+    if (this.context.status !== ZFlowContextStatus.paused) {
+      return throwError(new Error('Cannot resume a non paused engine.'));
+    }
     this.context = this.manager.resume();
     this.updateContext();
   }
   cancel() {
+    if (this.context.status !== ZFlowContextStatus.running && this.context.status !== ZFlowContextStatus.paused) {
+      return throwError(new Error('Cannot cancel a non running|paused engine.'));
+    }
     this.context = this.manager.cancel();
     this.updateContext();
   }

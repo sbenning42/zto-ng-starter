@@ -18,3 +18,7 @@ export class ZDictionnary<T = any> extends ZDictionnaryContract<T> {
     entries.forEach(assignToThis);
   }
 }
+
+export const noOp = () => {};
+export const emptyObj = () => ({});
+export const emptyArr = () => [];

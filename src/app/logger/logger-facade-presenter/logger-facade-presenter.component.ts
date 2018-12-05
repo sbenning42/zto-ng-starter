@@ -43,16 +43,16 @@ export class LoggerFacadePresenterComponent implements OnInit {
     if (this.logClosed) {
       const messages = [this.messageControl.value];
       this.messageForm.reset();
-      this.detachedForm.reset();
       this.logEvt.emit(messages);
+      this.detachedForm.reset();
     }
   }
   error() {
     if (this.errorClosed) {
       const messages = [this.messageControl.value];
       this.messageForm.reset();
-      this.detachedForm.reset();
       this.errorEvt.emit(messages);
+      this.detachedForm.reset();
     }
   }
   cancelLog() {

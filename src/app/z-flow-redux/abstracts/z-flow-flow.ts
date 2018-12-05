@@ -2,7 +2,7 @@ import { ZFlowTask } from './z-flow-task';
 
 export class ZFlowTaskMetadata {
   root = false;
-  target = false;
+  target?: boolean = false;
 }
 
 export abstract class ZFlowFlow extends ZFlowTask {

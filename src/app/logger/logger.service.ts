@@ -7,21 +7,15 @@ import { delay, first, map, tap, switchMap } from 'rxjs/operators';
 })
 export class LoggerService {
 
-  private get _log() {
-    return console.log.bind(console);
-  }
-  private get _error() {
-    return console.error.bind(console);
-  }
   constructor() { }
 
   log(...messages: any[]): Observable<any> {
     return timer(5000).pipe(
       first(),
       tap(() => {
-        this._log(...messages);
+        console.log(...messages);
       }),
-      map(() => ({ messages, channel: 'log' }))
+      map(() => ({ messages, channel: 'log' })),
       // switchMap(() => throwError(new Error('Random service error')))
     );
   }
@@ -29,10 +23,11 @@ export class LoggerService {
     return timer(0).pipe(
       first(),
       tap(() => {
-        this._error(...messages);
+        console.error(...messages);
       }),
       map(() => ({ messages, channel: 'error' })),
       // switchMap(() => throwError(new Error('Random service error')))
     );
   }
+
 }

@@ -5,6 +5,5 @@ import { ZFlowTaskStep } from '../models/z-flow-task-step';
 
 export abstract class ZFlowTask extends ZFlowAtom {
   retry?: ZFlowRetry;
-  protected notifier: Subject<ZFlowTaskStep> = new Subject;
-  feedback$: Observable<ZFlowTaskStep> = this.notifier.asObservable();
+  messageBus: Subject<ZFlowTaskStep> = new Subject;
 }
