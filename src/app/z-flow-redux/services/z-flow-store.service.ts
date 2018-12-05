@@ -1,23 +1,49 @@
 import { Injectable } from '@angular/core';
-import { Store } from '@ngrx/store';
+import { Store, select, createSelector } from '@ngrx/store';
 import { Observable } from 'rxjs';
-import { ZFlowState } from '../store/z-flow.state';
+import { ZFlowState, zFlowStateflowContextsAdapter } from '../store/z-flow.state';
 import { ZFlowContext } from '../models/z-flow-context';
 import { EntityState, Update } from '@ngrx/entity';
 import { ZDictionnary } from '../helpers/z-tools';
 import { ZFlowContextAdd, ZFlowContextUpdate, ZFlowContextRemove, ZFlowGlobalDataPoolUpdate } from '../store/z-flow.actions';
+import { zFlowStoreSelector } from '../store/z-flow.reducer';
+import { map, filter } from 'rxjs/operators';
+
+const {
+  selectAll,
+  selectEntities,
+  selectIds,
+  selectTotal,
+} = zFlowStateflowContextsAdapter.getSelectors();
+
+
+const selectZFlow = (store: any) => store[zFlowStoreSelector] as ZFlowState;
+const selectFlowContexts = createSelector(selectZFlow, (state: ZFlowState) => state.flowContexts);
+const selectGlobalDataPool = createSelector(selectZFlow, (state: ZFlowState) => state.globalDataPool);
+
+const selectAllFlowContexts = createSelector(selectFlowContexts, selectAll);
+const selectEntitiesFlowContexts = createSelector(selectFlowContexts, selectEntities);
+const selectIdsFlowContexts = createSelector(selectFlowContexts, selectIds);
+const selectTotalFlowContexts = createSelector(selectFlowContexts, selectTotal);
 
 @Injectable({
   providedIn: 'root'
 })
 export class ZFlowStoreService {
 
-  zFlow$: Observable<ZFlowState>;
-  flowContexts$: Observable<EntityState<ZFlowContext>>;
-  globalDataPool$: Observable<ZDictionnary>;
+  zFlow$: Observable<ZFlowState> = this.store.pipe(select(selectZFlow));
 
-  flowContextById: (id: string) => Observable<ZFlowContext>;
-  globalData: (symbol: string) => Observable<any>;
+  flowContexts$: Observable<EntityState<ZFlowContext>> = this.store.pipe(select(selectFlowContexts));
+  globalDataPool$: Observable<ZDictionnary> = this.store.pipe(select(selectGlobalDataPool));
+
+  flowContextById: (id: string) => Observable<ZFlowContext> = (id: string) => this.store.pipe(
+    select(selectEntitiesFlowContexts),
+    map((flowContexts: ZDictionnary<ZFlowContext>) => flowContexts[id]),
+  )
+  globalData: (symbol: string) => Observable<any> = (symbol: string) => this.store.pipe(
+    select(selectGlobalDataPool),
+    map((globalDataPool: ZDictionnary) => globalDataPool[symbol])
+  )
 
   constructor(private store: Store<any>) { }
 

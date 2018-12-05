@@ -17,6 +17,7 @@ export class ZFlowContext {
   pausedAt: number[] = [];
   resumedAt: number[] = [];
   finishStepAt: number[] = [];
+  retryStepAt: number[] = [];
   finishAt: number;
   failure: Error;
   result: ZDictionnary;
@@ -50,17 +51,6 @@ export class ZFlowContextManager {
     this.patch({ status: ZFlowContextStatus.running, resumedAt: [ ...this.flowContext.resumedAt, Date.now() ] });
     return this.flowContext;
   }
-  step(partialLocalDataPool: ZDictionnary) {
-    this.patch({
-      status: ZFlowContextStatus.resolved,
-      localDataPool: {
-        ...this.flowContext.localDataPool,
-        ...partialLocalDataPool
-      },
-      finishStepAt: [ ...this.flowContext.finishStepAt, Date.now() ]
-    });
-    return this.flowContext;
-  }
   cancel() {
     this.patch({ status: ZFlowContextStatus.canceled, finishAt: Date.now() });
     return this.flowContext;
@@ -69,8 +59,25 @@ export class ZFlowContextManager {
     this.patch({ status: ZFlowContextStatus.errored, failure, finishAt: Date.now() });
     return this.flowContext;
   }
+  step(partialLocalDataPool: ZDictionnary, finish: boolean = true) {
+    this.patch({
+      localDataPool: {
+        ...this.flowContext.localDataPool,
+        ...partialLocalDataPool
+      },
+      [(finish ? 'finishStepAt' : 'retryStepAt')]: [ ...this.flowContext[(finish ? 'finishStepAt' : 'retryStepAt')], Date.now() ],
+    });
+    return this.flowContext;
+  }
   resolve(result?: ZDictionnary) {
-    this.patch({ status: ZFlowContextStatus.resolved, result, finishAt: Date.now() });
+    this.patch({
+      status: ZFlowContextStatus.resolved,
+      localDataPool: {
+        ...this.flowContext.localDataPool,
+        ...result
+      },
+      result, finishAt: Date.now()
+    });
     return this.flowContext;
   }
 }

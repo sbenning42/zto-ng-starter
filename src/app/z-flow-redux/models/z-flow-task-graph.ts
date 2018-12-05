@@ -1,11 +1,36 @@
 import { ZFlowFlow } from '../abstracts/z-flow-flow';
 import { ZFlowTask } from '../abstracts/z-flow-task';
+import { ZFlowAtomAsyncMode } from '../abstracts/z-flow-atom';
+
+export enum ZFlowTaskNodeTraverseMode {
+  firstParent = '[Zto TaskNode Traverse Mode] First Parent',
+  lastParent = '[Zto TaskNode Traverse Mode] Last Parent'
+}
+
+function asyncModeToTraverseMode(asyncMode: ZFlowAtomAsyncMode): ZFlowTaskNodeTraverseMode {
+  switch (asyncMode) {
+    case ZFlowAtomAsyncMode.all:
+      return ZFlowTaskNodeTraverseMode.lastParent;
+    case ZFlowAtomAsyncMode.race:
+    default:
+      return ZFlowTaskNodeTraverseMode.firstParent;
+  }
+}
 
 export class ZFlowTaskNode {
+  parents: ZFlowTaskNode[] = [];
   childs: ZFlowTaskNode[] = [];
-  constructor(public task: ZFlowTask) { }
+  traverseMode: ZFlowTaskNodeTraverseMode = ZFlowTaskNodeTraverseMode.firstParent;
+  visit = 0;
+  constructor(public task: ZFlowTask) {
+    this.traverseMode = asyncModeToTraverseMode(task.asyncMode);
+  }
   add(node: ZFlowTaskNode) {
     this.childs.push(node);
+    node.parents.push(this);
+  }
+  reset() {
+    this.visit = 0;
   }
 }
 

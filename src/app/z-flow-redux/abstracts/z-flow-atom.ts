@@ -12,7 +12,6 @@ export abstract class ZFlowAtom {
 
   abstract type: string;
   defProvide?: ZDictionnary;
-  asyncMode?: ZFlowAtomAsyncMode;
   injectSymbols?: string[];
   injector: ZDictionnary = new ZDictionnary;
 
@@ -23,6 +22,8 @@ export abstract class ZFlowAtom {
   revertRequiresSymbols?: string[];
   revertProvideSymbols?: string[];
   revertRebindSymbols?: [string, string][];
+
+  asyncMode = ZFlowAtomAsyncMode.race;
 
   preExecute?(requires: ZDictionnary, ...rest: any[]);
   execute?(requires: ZDictionnary, ...rest: any[]): Observable<ZDictionnary>;
