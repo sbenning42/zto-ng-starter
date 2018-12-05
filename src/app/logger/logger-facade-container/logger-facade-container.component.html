@@ -1,8 +1,14 @@
 <app-logger-facade-presenter
-  [logClosed]="!(logRunning$|async)"
-  [errorClosed]="!(errorRunning$|async)"
+  [logClosed]="!logRunning$ || !(logRunning$|async)"
+  [errorClosed]="!errorRunning$ || !(errorRunning$|async)"
+  [logPaused]="logPaused$|async"
+  [errorPaused]="errorPaused$|async"
   (logEvt)="log($event)"
   (errorEvt)="error($event)"
   (cancelLogEvt)="cancelLog()"
   (cancelErrorEvt)="cancelError()"
+  (pauseLogEvt)="pauseLog()"
+  (pauseErrorEvt)="pauseError()"
+  (resumeLogEvt)="resumeLog()"
+  (resumeErrorEvt)="resumeError()"
 ></app-logger-facade-presenter>

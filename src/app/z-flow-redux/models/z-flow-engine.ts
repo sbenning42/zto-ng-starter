@@ -6,7 +6,7 @@ import { ZFlowTaskGraph, ZFlowTaskNode, ZFlowTaskNodeTraverseMode } from './z-fl
 import { ZDictionnary } from '../helpers/z-tools';
 import { ZFlowTask } from '../abstracts/z-flow-task';
 import { ZFlowStoreService } from '../services/z-flow-store.service';
-import { tap, catchError, reduce, filter, pluck, switchMap, take, takeWhile, distinctUntilChanged } from 'rxjs/operators';
+import { tap, catchError, reduce, filter, pluck, switchMap, take, takeWhile, distinctUntilChanged, finalize, concatMap, takeUntil } from 'rxjs/operators';
 import { ZFlowRetryDecision } from '../abstracts/z-flow-retry';
 
 const HELP = {
@@ -32,8 +32,8 @@ export class ZFlowEngine {
   private graph: ZFlowTaskGraph;
   private context: ZFlowContext;
   private manager: ZFlowContextManager;
-  private context$: Observable<ZFlowContext>;
-
+  
+  context$: Observable<ZFlowContext>;
   feedbacks$: Observable<ZFlowTaskStep>;
 
   constructor(
@@ -97,8 +97,8 @@ export class ZFlowEngine {
     this.store.updateGlobalDataStore(this.context.localDataPool);
   }
 
-  private step(provide?: ZDictionnary) {
-    this.context = this.manager.step(provide);
+  private step(provide?: ZDictionnary, finish: boolean = true) {
+    this.context = this.manager.step(provide, finish);
     this.updateContext(true);
   }
   private error(error?: Error) {
@@ -126,7 +126,7 @@ export class ZFlowEngine {
       node.visit += 1;
       switch (node.traverseMode) {
         case ZFlowTaskNodeTraverseMode.firstParent:
-          return node.visit === 0 ? run$ : empty();
+          return node.visit === 1 ? run$ : empty();
         case ZFlowTaskNodeTraverseMode.lastParent:
           return ++node.visit >= node.parents.length ? run$ : empty();
         default:
@@ -140,7 +140,8 @@ export class ZFlowEngine {
           ...partialProvide
         })),
         // @TODO handle retry/revert logic
-        catchError(onError)
+        catchError(onError),
+        takeUntil(this.context$.pipe(filter((ctx: ZFlowContext) => ctx.status === ZFlowContextStatus.canceled))),
       );
     });
     return flowExection$;
@@ -164,6 +165,7 @@ export class ZFlowEngine {
       return [rebindedSymbol, this.context.localDataPool[rebindedSymbol]];
     };
     const onExecuted = (provide?: ZDictionnary) => this.step(provide);
+    const onRetryed = (provide?: ZDictionnary) => this.step(provide, false);
     const isRunning = (status: ZFlowContextStatus) => status === ZFlowContextStatus.running;
     const isPaused = (status: ZFlowContextStatus) => status === ZFlowContextStatus.paused;
 
@@ -176,7 +178,7 @@ export class ZFlowEngine {
             const retryExecution$ = task.retry.execute
               ? defer(() => task.retry.execute(taskRequires).pipe(
                 take(1),
-                tap(onExecuted),
+                tap(onRetryed),
                 switchMap(() => failedSourceFactory())
               ))
               : of({});
@@ -194,8 +196,11 @@ export class ZFlowEngine {
       const taskExecution$ = this.context$.pipe(
         pluck<ZFlowContext, ZFlowContextStatus>('status'),
         distinctUntilChanged(),
+        tap((s) => console.log('Got status: ', s)),
         // task Cancel logic + Resolved or Error cancel
-        takeWhile((status: ZFlowContextStatus) => isRunning(status) || isPaused(status)),
+        // concatMap + takeWhile = inclusive takeWhile
+        concatMap((status: ZFlowContextStatus) => isRunning(status) || isPaused(status) ? of(status) : of(status, null)),
+        takeWhile((status: ZFlowContextStatus) => !!status),
         // pause/resume logic + thanks to switchmap (and distinctUntilChanged) NEVER will be unsubscribe in any case
         switchMap((status: ZFlowContextStatus) => (isRunning(status) ? task.execute(taskRequires) : NEVER)),
         catchError(recRetryOrErrorLogic(() => taskExecution$)),

@@ -3,6 +3,8 @@ import { Observable } from 'rxjs';
 import { LoggerFlowFacade } from '../z-flow/logger-flow.facade';
 import { ZtoTaskflowEngine } from 'src/app/zto-task-flow/pattern-engine/zto-taskflow-engine.model';
 import { ZFlowEngine } from '../../z-flow-redux/models/z-flow-engine';
+import { pluck, filter, map, takeWhile } from 'rxjs/operators';
+import { ZFlowContext, ZFlowContextStatus } from '../../z-flow-redux/models/z-flow-context';
 
 const trackLifeCycleObserver = (engine: ZFlowEngine) => ({
   next: next => {
@@ -12,7 +14,7 @@ const trackLifeCycleObserver = (engine: ZFlowEngine) => ({
     // console.error('Got error: ', error);
   },
   complete: () => {
-    // console.log('Got complete');
+    console.log('Got complete');
     engine.drop();
   },
 });
@@ -24,8 +26,11 @@ const trackLifeCycleObserver = (engine: ZFlowEngine) => ({
 })
 export class LoggerFacadeContainerComponent implements OnInit {
 
-  logRunning$: Observable<boolean>;
-  errorRunning$: Observable<boolean>;
+  logRunning$: Observable<any>;
+  errorRunning$: Observable<any>;
+
+  logPaused$: Observable<any>;
+  errorPaused$: Observable<any>;
 
   logRunner: ZtoTaskflowEngine;
   errorRunner: ZtoTaskflowEngine;
@@ -40,26 +45,52 @@ export class LoggerFacadeContainerComponent implements OnInit {
 
   log(messages: any[]) {
     this.logEngine = this.facade.log(...messages);
+    this.logRunning$ = this.logEngine.context$.pipe(
+      takeWhile((ctx: ZFlowContext) => !!ctx),
+      map((ctx: ZFlowContext) => ctx && ctx.status === ZFlowContextStatus.running || ctx.status === ZFlowContextStatus.paused),
+    );
+    this.logPaused$ = this.logEngine.context$.pipe(
+      takeWhile((ctx: ZFlowContext) => !!ctx),
+      map((ctx: ZFlowContext) => ctx && ctx.status === ZFlowContextStatus.paused),
+    );
     this.logEngine.start().subscribe(trackLifeCycleObserver(this.logEngine));
-
-    setTimeout(() => {
-      this.logEngine.pause();
-      console.log('Task paused ...');
-    }, 5000);
-
-    setTimeout(() => {
-      console.log('Task should have ended now ... Resuming it instead ...');
-      this.logEngine.resume();
-    }, 10000);
-
-    setTimeout(() => {
-      console.log('Task should end in 1 second ...');
-    }, 19000);
-
   }
+
   error(messages: any[]) {
     this.errorEngine = this.facade.error(...messages);
-    this.errorEngine.start().subscribe(trackLifeCycleObserver(this.logEngine));
+    this.errorRunning$ = this.errorEngine.context$.pipe(
+      takeWhile((ctx: ZFlowContext) => !!ctx),
+      map((ctx: ZFlowContext) => ctx && ctx.status === ZFlowContextStatus.running || ctx.status === ZFlowContextStatus.paused),
+    );
+    this.errorPaused$ = this.errorEngine.context$.pipe(
+      takeWhile((ctx: ZFlowContext) => !!ctx),
+      map((ctx: ZFlowContext) => ctx && ctx.status === ZFlowContextStatus.paused),
+    );
+    this.errorEngine.start().subscribe(trackLifeCycleObserver(this.errorEngine));
+  }
+  cancelLog() {
+    this.logEngine.cancel();
+    console.log('Flow canceled.');
+  }
+  pauseLog() {
+    this.logEngine.pause();
+    console.log('Flow paused.');
+  }
+  resumeLog() {
+    this.logEngine.resume();
+    console.log('Flow resumed.');
+  }
+  cancelError() {
+    this.errorEngine.cancel();
+    console.log('Flow canceled.');
+  }
+  pauseError() {
+    this.errorEngine.pause();
+    console.log('Flow paused.');
+  }
+  resumeError() {
+    this.errorEngine.resume();
+    console.log('Flow resumed.');
   }
   /*
   log(messages: any[]) {
@@ -71,9 +102,6 @@ export class LoggerFacadeContainerComponent implements OnInit {
     this.errorRunner.run$.subscribe();
   }
 
-  cancelLog() {
-    this.logRunner.doCancel();
-  }
   cancelError() {
     this.errorRunner.doCancel();
   }

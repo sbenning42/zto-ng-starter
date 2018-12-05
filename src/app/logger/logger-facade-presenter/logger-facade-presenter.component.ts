@@ -12,11 +12,20 @@ export class LoggerFacadePresenterComponent implements OnInit {
   @Input() logClosed: boolean;
   @Input() errorClosed: boolean;
 
+  @Input() logPaused: boolean;
+  @Input() errorPaused: boolean;
+
   @Output() logEvt: EventEmitter<any[]> = new EventEmitter;
   @Output() errorEvt: EventEmitter<any[]> = new EventEmitter;
 
   @Output() cancelLogEvt: EventEmitter<void> = new EventEmitter;
   @Output() cancelErrorEvt: EventEmitter<void> = new EventEmitter;
+
+  @Output() pauseLogEvt: EventEmitter<void> = new EventEmitter;
+  @Output() pauseErrorEvt: EventEmitter<void> = new EventEmitter;
+
+  @Output() resumeLogEvt: EventEmitter<void> = new EventEmitter;
+  @Output() resumeErrorEvt: EventEmitter<void> = new EventEmitter;
 
   @ViewChild(FormGroupDirective) detachedForm: FormGroupDirective;
 
@@ -51,9 +60,29 @@ export class LoggerFacadePresenterComponent implements OnInit {
       this.cancelLogEvt.emit();
     }
   }
-  cancelerror() {
+  cancelError() {
     if (!this.errorClosed) {
       this.cancelErrorEvt.emit();
+    }
+  }
+  pauseLog() {
+    if (!this.logClosed) {
+      this.pauseLogEvt.emit();
+    }
+  }
+  pauseError() {
+    if (!this.errorClosed) {
+      this.pauseErrorEvt.emit();
+    }
+  }
+  resumeLog() {
+    if (!this.logClosed) {
+      this.resumeLogEvt.emit();
+    }
+  }
+  resumeError() {
+    if (!this.errorClosed) {
+      this.resumeErrorEvt.emit();
     }
   }
 

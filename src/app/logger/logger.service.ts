@@ -16,7 +16,7 @@ export class LoggerService {
   constructor() { }
 
   log(...messages: any[]): Observable<any> {
-    return timer(10000).pipe(
+    return timer(5000).pipe(
       first(),
       tap(() => {
         this._log(...messages);
