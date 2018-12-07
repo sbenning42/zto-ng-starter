@@ -189,9 +189,11 @@ export class ZFlowEngine {
     // @PUBLIC_NOTE: merge take care to run ( [node.childs] ) in parallele
     const recTraverseGraph = (node: ZFlowTaskNode) => {
       const run$ = defer(() => concat(
-        defer(() => this.runTask(node.task)),
+        defer(() => this.runTaskNode(node)),
         merge(...node.childs.map(recTraverseGraph))
       ));
+      return run$;
+      /* @BUG: this descision should happen asynchronously, on resolve.
       node.visit += 1;
       switch (node.traverseMode) {
         case ZFlowTaskNodeTraverseMode.firstParent:
@@ -201,6 +203,7 @@ export class ZFlowEngine {
         default:
           return empty();
       }
+      */
     };
     const flowExection$ = defer(() => {
       return recTraverseGraph(this.graph.tree).pipe(
@@ -216,10 +219,12 @@ export class ZFlowEngine {
     return flowExection$;
   }
 
-  private runTask(task: ZFlowTask): Observable<ZDictionnary> {
-    if (!task.execute) {
+  private runTaskNode(taskNode: ZFlowTaskNode): Observable<ZDictionnary> {
+    if (!taskNode.task.execute) {
       return empty();
     }
+
+    const task = taskNode.task;
 
     const aggregateEntries = (aggregate: any, [symbol, value]) => ({...aggregate, [symbol]: value});
     const findSymbol = (symbol: string) => ([sym]: [string, string]) => symbol === sym;
@@ -262,6 +267,18 @@ export class ZFlowEngine {
         return defer(retry);
       };
 
+      const mayKickoffTaskExecution = () => {
+        taskNode.visit += 1;
+        switch (taskNode.traverseMode) {
+          case ZFlowTaskNodeTraverseMode.firstParent:
+            return taskNode.visit === 1 ? task.execute(taskRequires) : empty();
+          case ZFlowTaskNodeTraverseMode.lastParent:
+            return ++taskNode.visit >= taskNode.parents.length ? task.execute(taskRequires) : empty();
+          default:
+            return empty();
+        }
+      };
+
       const taskExecution$ = this.whileContext$.pipe(
         pluck<ZFlowContext, ZFlowContextStatus>('status'),
         distinctUntilChanged(),
@@ -270,7 +287,7 @@ export class ZFlowEngine {
         concatMap((status: ZFlowContextStatus) => isRunning(status) || isPaused(status) ? of(status) : of(status, null)),
         takeWhile((status: ZFlowContextStatus) => !!status),
         // pause/resume logic + thanks to switchmap (and distinctUntilChanged) NEVER will be unsubscribe in any case
-        switchMap((status: ZFlowContextStatus) => (isRunning(status) ? task.execute(taskRequires) : NEVER)),
+        switchMap((status: ZFlowContextStatus) => (isRunning(status) ? mayKickoffTaskExecution() : NEVER)),
         catchError(recRetryOrErrorLogic(executeTask)),
         take(1),
         tap(onExecuted),

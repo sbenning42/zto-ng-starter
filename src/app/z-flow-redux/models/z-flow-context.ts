@@ -39,26 +39,32 @@ export class ZFlowContextManager {
       ...changes
     };
   }
+
   start() {
     this.patch({ status: ZFlowContextStatus.running, startedAt: Date.now() });
     return this.flowContext;
   }
+
   pause() {
     this.patch({ status: ZFlowContextStatus.paused, pausedAt: [ ...this.flowContext.pausedAt, Date.now() ] });
     return this.flowContext;
   }
+
   resume() {
     this.patch({ status: ZFlowContextStatus.running, resumedAt: [ ...this.flowContext.resumedAt, Date.now() ] });
     return this.flowContext;
   }
+
   cancel() {
     this.patch({ status: ZFlowContextStatus.canceled, finishAt: Date.now() });
     return this.flowContext;
   }
+
   error(failure?: Error) {
     this.patch({ status: ZFlowContextStatus.errored, failure, finishAt: Date.now() });
     return this.flowContext;
   }
+
   step(partialLocalDataPool: ZDictionnary, finish: boolean = true) {
     this.patch({
       localDataPool: {
@@ -69,6 +75,7 @@ export class ZFlowContextManager {
     });
     return this.flowContext;
   }
+
   resolve(result?: ZDictionnary) {
     this.patch({
       status: ZFlowContextStatus.resolved,

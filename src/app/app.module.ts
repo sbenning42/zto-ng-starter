@@ -3,9 +3,8 @@ import { NgModule } from '@angular/core';
 
 import { AppComponent } from './app.component';
 import { SharedModule } from './shared/shared.module';
-import { HeaderModule } from './header/header.module';
-import { HomeModule } from './home/home.module';
-import { ZtoTaskflowModule } from './zto-task-flow/zto-taskflow.module';
+import { HeaderModule } from './ui/header/header.module';
+import { HomeModule } from './ui/home/home.module';
 import { StoreModule } from '@ngrx/store';
 import { EffectsModule } from '@ngrx/effects';
 import { StoreRouterConnectingModule } from '@ngrx/router-store';
@@ -28,7 +27,6 @@ import { ZFlowReduxModule } from './z-flow-redux/z-flow-redux.module';
     StoreRouterConnectingModule.forRoot(),
     StoreDevtoolsModule.instrument({maxAge: 100, logOnly: !environment.production}),
     ZFlowReduxModule,
-    ZtoTaskflowModule,
     LoggerModule,
     StorageModule,
     ToastModule,

@@ -1,7 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { LoggerFlowFacade } from '../z-flow/logger-flow.facade';
 import { ZFlowEngine } from '../../z-flow-redux/models/z-flow-engine';
-import { Observable } from 'rxjs';
 
 const trackFlowLifeCycleObserver = (engine: ZFlowEngine) => ({
   next: next => {
