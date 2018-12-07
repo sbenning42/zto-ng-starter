@@ -1,16 +1,1 @@
-<app-storage-facade-presenter
-  [loaded]="loaded$|async"
-  [entries]="entries$|async"
-  [loadClosed]="(!getRunner) || (getRunner && getRunner.runFinish)"
-  [saveClosed]="(!saveRunner) || (saveRunner && saveRunner.runFinish)"
-  [removeClosed]="(!removeRunner) || (removeRunner && removeRunner.runFinish)"
-  [clearClosed]="(!clearRunner) || (clearRunner && clearRunner.runFinish)"
-  (loadEvt)="get($event)"
-  (saveEvt)="save($event)"
-  (removeEvt)="remove($event)"
-  (clearEvt)="clear()"
-  (cancelLoadEvt)="cancelGet()"
-  (cancelSaveEvt)="cancelSave()"
-  (cancelRemoveEvt)="cancelRemove()"
-  (cancelClearEvt)="cancelClear()"
-></app-storage-facade-presenter>
+<app-storage-facade-presenter></app-storage-facade-presenter>

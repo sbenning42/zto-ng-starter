@@ -18,7 +18,8 @@ import {
   distinctUntilChanged,
   concatMap,
   takeUntil,
-  map
+  map,
+  debounceTime
 } from 'rxjs/operators';
 import { ZFlowRetryDecision } from '../abstracts/z-flow-retry';
 
@@ -133,23 +134,23 @@ export class ZFlowEngine {
 
     const whileStatus$ = this.whileContext$.pipe(pluckStatus);
 
-    this.isIdle$ = whileStatus$.pipe(map(statusIsIdle), distinctUntilChanged());
-    this.idle$ = whileStatus$.pipe(filter(statusIsIdle), distinctUntilChanged());
+    this.isIdle$ = whileStatus$.pipe(map(statusIsIdle), distinctUntilChanged(), debounceTime(50));
+    this.idle$ = whileStatus$.pipe(filter(statusIsIdle), distinctUntilChanged(), debounceTime(50));
 
-    this.isRunning$ = whileStatus$.pipe(map(statusIsRunning), distinctUntilChanged());
-    this.running$ = whileStatus$.pipe(filter(statusIsRunning), distinctUntilChanged());
+    this.isRunning$ = whileStatus$.pipe(map(statusIsRunning), distinctUntilChanged(), debounceTime(50));
+    this.running$ = whileStatus$.pipe(filter(statusIsRunning), distinctUntilChanged(), debounceTime(50));
 
-    this.isPaused$ = whileStatus$.pipe(map(statusIsPaused), distinctUntilChanged());
-    this.paused$ = whileStatus$.pipe(filter(statusIsPaused), distinctUntilChanged());
+    this.isPaused$ = whileStatus$.pipe(map(statusIsPaused), distinctUntilChanged(), debounceTime(50));
+    this.paused$ = whileStatus$.pipe(filter(statusIsPaused), distinctUntilChanged(), debounceTime(50));
 
-    this.isCanceled$ = whileStatus$.pipe(map(statusIsCanceled), distinctUntilChanged());
-    this.canceled$ = whileStatus$.pipe(filter(statusIsCanceled), distinctUntilChanged());
+    this.isCanceled$ = whileStatus$.pipe(map(statusIsCanceled), distinctUntilChanged(), debounceTime(50));
+    this.canceled$ = whileStatus$.pipe(filter(statusIsCanceled), distinctUntilChanged(), debounceTime(50));
 
-    this.isErrored$ = whileStatus$.pipe(map(statusIsErrored), distinctUntilChanged());
-    this.errored$ = whileStatus$.pipe(filter(statusIsErrored), distinctUntilChanged());
+    this.isErrored$ = whileStatus$.pipe(map(statusIsErrored), distinctUntilChanged(), debounceTime(50));
+    this.errored$ = whileStatus$.pipe(filter(statusIsErrored), distinctUntilChanged(), debounceTime(50));
 
-    this.isResolved$ = whileStatus$.pipe(map(statusIsResolved), distinctUntilChanged());
-    this.resolved$ = whileStatus$.pipe(filter(statusIsResolved), distinctUntilChanged());
+    this.isResolved$ = whileStatus$.pipe(map(statusIsResolved), distinctUntilChanged(), debounceTime(50));
+    this.resolved$ = whileStatus$.pipe(filter(statusIsResolved), distinctUntilChanged(), debounceTime(50));
 
   }
   private updateContext(updateGlobalDataStore: boolean = false) {

@@ -1,5 +1,6 @@
 import { Component, OnInit, Input, EventEmitter, Output, ChangeDetectionStrategy, ViewChild } from '@angular/core';
 import { FormGroup, FormControl, Validators, FormGroupDirective } from '@angular/forms';
+import { asap } from '../../z-flow-redux/helpers/z-tools';
 
 @Component({
   selector: 'app-logger-facade-presenter',
@@ -44,7 +45,6 @@ export class LoggerFacadePresenterComponent implements OnInit {
       const messages = [this.messageControl.value];
       this.messageForm.reset();
       this.logEvt.emit(messages);
-      this.detachedForm.reset();
     }
   }
   error() {
@@ -52,7 +52,6 @@ export class LoggerFacadePresenterComponent implements OnInit {
       const messages = [this.messageControl.value];
       this.messageForm.reset();
       this.errorEvt.emit(messages);
-      this.detachedForm.reset();
     }
   }
   cancelLog() {

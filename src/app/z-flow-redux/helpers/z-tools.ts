@@ -22,3 +22,5 @@ export class ZDictionnary<T = any> extends ZDictionnaryContract<T> {
 export const noOp = () => {};
 export const emptyObj = () => ({});
 export const emptyArr = () => [];
+
+export const asap = (fn: () => void) => setTimeout(fn, 0);
