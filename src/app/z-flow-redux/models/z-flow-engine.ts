@@ -18,7 +18,9 @@ import {
   distinctUntilChanged,
   concatMap,
   takeUntil,
-  map
+  map,
+  scan,
+  timeout
 } from 'rxjs/operators';
 import { ZFlowRetryDecision } from '../abstracts/z-flow-retry';
 
@@ -43,8 +45,22 @@ const HELP = {
 };
 
 export class ZFlowEngineOptions {
-  notifySteps?: boolean;
-  flowDueTimeout?: number;
+  constructor(
+    public notifySteps?: boolean,
+    public flowDueTimeout?: number,
+    public ifNotifyStepsStepDueTimeout?: number,
+    public closeMessagesOnDrop?: boolean,
+    ) {
+    this.flowDueTimeout = this.flowDueTimeout > 0
+      ? this.flowDueTimeout
+      : 999999;
+      this.ifNotifyStepsStepDueTimeout = this.ifNotifyStepsStepDueTimeout > 0
+        ? this.ifNotifyStepsStepDueTimeout
+        : 999999;
+    this.closeMessagesOnDrop = this.closeMessagesOnDrop !== undefined
+      ? this.closeMessagesOnDrop
+      : true;
+  }
 }
 
 export class ZFlowEngine {
@@ -78,16 +94,18 @@ export class ZFlowEngine {
     public store: ZFlowStoreService,
     public injector: ZDictionnary = new ZDictionnary,
     public provide: ZDictionnary = new ZDictionnary,
+    public options: ZFlowEngineOptions = new ZFlowEngineOptions,
   ) {
     this.setup();
     this.addContext();
+    this.makeFeedbacks();
+    // console.log(this);
   }
 
   private setup() {
     this.makeGraph();
     this.makeContext();
     this.makeManager();
-    this.makeFeedbacks();
   }
 
   private makeGraph() {
@@ -111,7 +129,11 @@ export class ZFlowEngine {
     this.manager = new ZFlowContextManager(this.context);
   }
   private makeFeedbacks() {
-    const mapMessageBus = (task: ZFlowTask) => task.messageBus.asObservable();
+    const dropAll = () => false;
+    const drop$ = this.options.closeMessagesOnDrop
+      ? concat(this.whileContext$.pipe(filter(dropAll)), of(true))
+      : NEVER;
+    const mapMessageBus = (task: ZFlowTask) => task.messageBus.asObservable().pipe(takeUntil(drop$));
     this.messages$ = merge(...this.flow.tasks.map(mapMessageBus));
   }
 
@@ -218,10 +240,11 @@ export class ZFlowEngine {
     };
     const flowExection$ = defer(() => {
       return recTraverseGraph(this.graph.tree).pipe(
-        reduce((provide: ZDictionnary, partialProvide: ZDictionnary) => ({
+        (this.options.notifySteps ? scan : reduce)((provide: ZDictionnary, partialProvide: ZDictionnary) => ({
           ...provide,
           ...partialProvide
         })),
+        timeout(this.options.notifySteps ? this.options.ifNotifyStepsStepDueTimeout : this.options.flowDueTimeout),
         // @TODO handle retry/revert logic
         catchError(onError),
         takeUntil(this.canceled$),
@@ -250,7 +273,7 @@ export class ZFlowEngine {
       const foundData = this.context.localDataPool[rebindedSymbol] !== undefined
         ? this.context.localDataPool[rebindedSymbol]
         : this.store.globalDataPoolSnapshot()[rebindedSymbol];
-      return [rebindedSymbol, foundData];
+      return [symbol, foundData];
     };
     const onExecuted = (provide?: ZDictionnary) => this.step(provide);
     const onRetryed = (provide?: ZDictionnary) => this.step(provide, false);

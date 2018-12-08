@@ -27,13 +27,14 @@ export const emptyArr: (...args: any[]) => any[] = () => [];
 
 export const trackEngineLifeCycleObserver = (engine: ZFlowEngine) => ({
   next: next => {
-    console.log(`Component for Engine ${engine.flow.type} Got Flow Next: `, next);
+    // console.log(`Component for Engine ${engine.flow.type} Got Flow Next: `, next);
   },
   error: error => {
-    console.error(`Component for Engine ${engine.flow.type} Got Flow Error: `, error);
+    // console.error(`Component for Engine ${engine.flow.type} Got Flow Error: `, error);
+    engine.drop();
   },
   complete: () => {
-    console.log(`Component for Engine ${engine.flow.type} Got Flow Complete`);
+    // console.log(`Component for Engine ${engine.flow.type} Got Flow Complete`);
     engine.drop();
   },
 });

@@ -5,6 +5,7 @@ import { SharedModule } from '../../shared/shared.module';
 import { LoggerModule } from '../../logger/logger.module';
 import { StorageModule } from '../../storage/storage.module';
 import { ToastModule } from '../../toast/toast.module';
+import { SampleFlowsModule } from '../sample-flows/sample-flows.module';
 
 @NgModule({
   imports: [
@@ -12,7 +13,8 @@ import { ToastModule } from '../../toast/toast.module';
     SharedModule,
     LoggerModule,
     StorageModule,
-    ToastModule
+    ToastModule,
+    SampleFlowsModule
   ],
   declarations: [HomePageComponent]
 })

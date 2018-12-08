@@ -47,5 +47,6 @@ export class ZFlowTaskGraph {
     const resolveLink = ([provider, dependent]: [ZFlowTaskNode, ZFlowTaskNode]) => provider.add(dependent);
     flow.links.map(mapLink).forEach(resolveLink);
     this.tree = nodes[0];
+    // console.log(this.tree);
   }
 }

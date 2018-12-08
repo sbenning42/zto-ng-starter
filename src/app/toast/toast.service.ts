@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { MatSnackBar, MatSnackBarRef, SimpleSnackBar } from '@angular/material/snack-bar';
-import { Observable, empty } from 'rxjs';
+import { Observable, empty, of } from 'rxjs';
 import { tap } from 'rxjs/operators';
 
 @Injectable({
@@ -14,10 +14,13 @@ export class ToastService {
   constructor(public snack: MatSnackBar) { }
 
   open(message: string): Observable<any> {
+    if (this.currentRef && this.open) {
+      this.currentRef.dismiss();
+    }
     this.currentRef = this.snack.open(message, '', {
       duration: 4000,
     });
-    return this.currentRef.afterOpened().pipe(tap(() => this.isOpen = true));
+    return (this.open ? of(true) : this.currentRef.afterOpened()).pipe(tap(() => this.isOpen = true));
   }
   close(): Observable<any> {
     if (this.currentRef && this.open) {

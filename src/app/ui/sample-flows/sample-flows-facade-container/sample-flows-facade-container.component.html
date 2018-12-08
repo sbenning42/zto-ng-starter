@@ -1,3 +1,14 @@
-<p>
-  sample-flows-facade-container works!
-</p>
+<app-sample-flows-facade-presenter
+  [sample1Closed]="!sample1Engine || (!(sample1Engine.isRunning$|async) && !(sample1Engine.isPaused$|async))"
+  [sample1Paused]="sample1Engine && (sample1Engine.isPaused$|async)"
+  (sample1Evt)="sample1()"
+  (pauseSample1Evt)="pauseSample1()"
+  (resumeSample1Evt)="resumeSample1()"
+  (cancelSample1Evt)="cancelSample1()"
+  [sample2Closed]="!sample2Engine || (!(sample2Engine.isRunning$|async) && !(sample2Engine.isPaused$|async))"
+  [sample2Paused]="sample2Engine && (sample2Engine.isPaused$|async)"
+  (sample2Evt)="sample2()"
+  (pauseSample2Evt)="pauseSample2()"
+  (resumeSample2Evt)="resumeSample2()"
+  (cancelSample2Evt)="cancelSample2()"
+></app-sample-flows-facade-presenter>

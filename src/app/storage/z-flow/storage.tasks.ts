@@ -2,6 +2,7 @@ import { ZFlowTask } from '../../z-flow-redux/abstracts/z-flow-task';
 import { ZDictionnary, emptyObj } from '../../z-flow-redux/helpers/z-tools';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
+import { environment } from 'src/environments/environment';
 
 export enum StorageSymbol {
   loadKeys = '[Storage Symbol] Load Keys',
@@ -28,7 +29,8 @@ export class StorageTaskLoad extends ZFlowTask {
 
   execute(requires: ZDictionnary): Observable<ZDictionnary> {
     const keys = requires[StorageSymbol.loadKeys] || [];
-    return this.injector.storageService.getAll(keys).pipe(map(mapProvide));
+    const options = environment.demo ? { delayTime: Math.random() * 10000, errorRate: 0.3 } : {};
+    return this.injector.storageService.getAll(keys, options).pipe(map(mapProvide));
   }
 
 }
@@ -42,7 +44,8 @@ export class StorageTaskSave extends ZFlowTask {
 
   execute(requires: ZDictionnary): Observable<ZDictionnary> {
     const entries = requires[StorageSymbol.saveEntries] || {};
-    return this.injector.storageService.save(entries).pipe(map(mapProvide));
+    const options = environment.demo ? { delayTime: Math.random() * 10000, errorRate: 0.3 } : {};
+    return this.injector.storageService.save(entries, options).pipe(map(mapProvide));
   }
 
 }
@@ -65,7 +68,8 @@ export class StorageTaskRemove extends ZFlowTask {
     const myMapProvide = () => ({
       [StorageSymbol.storageEntries]: Object.entries(entries).filter(removed).reduce(aggregate, {}),
     });
-    return this.injector.storageService.remove(keys).pipe(map(myMapProvide));
+    const options = environment.demo ? { delayTime: Math.random() * 10000, errorRate: 0.3 } : {};
+    return this.injector.storageService.remove(keys, options).pipe(map(myMapProvide));
   }
 
 }
@@ -77,7 +81,8 @@ export class StorageTaskClear extends ZFlowTask {
   provideSymbols = [StorageSymbol.storageEntries];
 
   execute(): Observable<ZDictionnary> {
-    return this.injector.storageService.clear().pipe(map(mapProvide));
+    const options = environment.demo ? { delayTime: Math.random() * 10000, errorRate: 0.3 } : {};
+    return this.injector.storageService.clear(options).pipe(map(mapProvide));
   }
 
 }

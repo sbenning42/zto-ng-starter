@@ -23,8 +23,15 @@ export abstract class ZFlowFlow extends ZFlowTask {
     if (metadata.target) {
       this.targets.push(task);
     }
-    if ((task as ZFlowFlow).tasks && (task as ZFlowFlow).links) {
-      (task as ZFlowFlow).links.forEach(link => this.addLink(link));
+    const taskAsFlow = task as ZFlowFlow;
+    if (
+      taskAsFlow.tasks
+      && taskAsFlow.links
+      && Array.isArray(taskAsFlow.tasks)
+      && Array.isArray(taskAsFlow.links)
+    ) {
+      taskAsFlow.tasks.forEach(innerTask => this.tasks.push(innerTask));
+      taskAsFlow.links.forEach(link => this.addLink(link));
     }
   }
 

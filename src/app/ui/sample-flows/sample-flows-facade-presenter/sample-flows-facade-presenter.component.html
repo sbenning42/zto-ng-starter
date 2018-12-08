@@ -1,3 +1,30 @@
-<p>
-  sample-flows-facade-presenter works!
-</p>
+<section class="card flex-row-cc">
+  <mat-card>
+
+    <mat-card-header>
+      <mat-card-title>
+        Sample Flows Facade Presenter
+      </mat-card-title>
+    </mat-card-header>
+
+    <mat-card-content>
+    </mat-card-content>
+
+    <mat-card-actions class="flex-row-cs">
+      <button mat-button color="primary" *ngIf="sample1Closed" (click)="sample1()">SAMPLE 1</button>
+      <button mat-button color="accent" *ngIf="!sample1Closed" (click)="cancelSample1()">CANCEL SAMPLE 1</button>
+
+      <button mat-button color="accent" *ngIf="!sample1Closed && !sample1Paused" (click)="pauseSample1()">PAUSE SAMPLE 1</button>
+      <button mat-button color="accent" *ngIf="!sample1Closed && sample1Paused" (click)="resumeSample1()">RESUME SAMPLE 1</button>
+
+
+      <button mat-button color="primary" *ngIf="sample2Closed" (click)="sample2()">SAMPLE 2</button>
+      <button mat-button color="accent" *ngIf="!sample2Closed" (click)="cancelSample2()">CANCEL SAMPLE 2</button>
+
+      <button mat-button color="accent" *ngIf="!sample2Closed && !sample2Paused" (click)="pauseSample2()">PAUSE SAMPLE 2</button>
+      <button mat-button color="accent" *ngIf="!sample2Closed && sample2Paused" (click)="resumeSample2()">RESUME SAMPLE 2</button>
+
+    </mat-card-actions>
+
+  </mat-card>
+</section>
