@@ -62,8 +62,8 @@ export class SampleFlowsFacadeContainerComponent implements OnInit {
     };
     this.sample2Engine.messages$.subscribe(
       (message: ZFlowTaskStep) => console.log('A Step Message of sample2Engine arrived: ', message),
-      () => console.error('Get a Step Message Error for sample2Engine'),
-      () => console.log('Get a Step Message Completion for sample2Engine'),
+      () => console.error('Got a Step Message Error for sample2Engine'),
+      () => console.log('Got a Step Message Completion for sample2Engine'),
     );
     this.sample2Engine.start()
       .pipe(catchError(ifError))
