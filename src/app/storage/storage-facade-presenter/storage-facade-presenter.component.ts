@@ -11,6 +11,7 @@ import { FormGroup, Validators, FormControl } from '@angular/forms';
 export class StorageFacadePresenterComponent implements OnInit {
 
   @Input() loaded: boolean;
+
   @Input() entries: StorageEntries;
   get entriesAsArray(): [string, string][] {
     return Object.entries(this.entries || {});
@@ -21,10 +22,25 @@ export class StorageFacadePresenterComponent implements OnInit {
   @Input() removeClosed: boolean;
   @Input() clearClosed: boolean;
 
+  @Input() loadPaused: boolean;
+  @Input() savePaused: boolean;
+  @Input() removePaused: boolean;
+  @Input() clearPaused: boolean;
+
   @Output() loadEvt: EventEmitter<string[]> = new EventEmitter;
   @Output() saveEvt: EventEmitter<StorageEntries> = new EventEmitter;
   @Output() removeEvt: EventEmitter<string[]> = new EventEmitter;
   @Output() clearEvt: EventEmitter<void> = new EventEmitter;
+
+  @Output() pauseLoadEvt: EventEmitter<void> = new EventEmitter;
+  @Output() pauseSaveEvt: EventEmitter<void> = new EventEmitter;
+  @Output() pauseRemoveEvt: EventEmitter<void> = new EventEmitter;
+  @Output() pauseClearEvt: EventEmitter<void> = new EventEmitter;
+
+  @Output() resumeLoadEvt: EventEmitter<void> = new EventEmitter;
+  @Output() resumeSaveEvt: EventEmitter<void> = new EventEmitter;
+  @Output() resumeRemoveEvt: EventEmitter<void> = new EventEmitter;
+  @Output() resumeClearEvt: EventEmitter<void> = new EventEmitter;
 
   @Output() cancelLoadEvt: EventEmitter<void> = new EventEmitter;
   @Output() cancelSaveEvt: EventEmitter<void> = new EventEmitter;
@@ -47,51 +63,59 @@ export class StorageFacadePresenterComponent implements OnInit {
   }
 
   load(keys?: string[]) {
-    if (this.loadClosed) {
-      this.loadEvt.emit(keys);
-    }
+    this.loadEvt.emit(keys);
+  }
+  pauseLoad() {
+    this.pauseLoadEvt.emit();
+  }
+  resumeLoad() {
+    this.resumeLoadEvt.emit();
   }
   cancelLoad() {
-    if (!this.loadClosed) {
-      this.cancelLoadEvt.emit();
-    }
+    this.cancelLoadEvt.emit();
   }
 
   save() {
-    if (this.saveClosed) {
-      const entries = { [this.keyControl.value]: this.valueControl.value };
-      this.saveForm.reset();
-      this.saveEvt.emit(entries);
-    }
+    const entries = { [this.keyControl.value]: this.valueControl.value };
+    this.saveEvt.emit(entries);
+  }
+  pauseSave() {
+    this.pauseSaveEvt.emit();
+  }
+  resumeSave() {
+    this.resumeSaveEvt.emit();
   }
   cancelSave() {
-    if (!this.saveClosed) {
-      this.cancelSaveEvt.emit();
-    }
+    this.cancelSaveEvt.emit();
   }
 
   remove(index: number, keys?: string[]) {
-    if (this.removeClosed) {
-      this.indexRemoving = index;
-      this.removeEvt.emit(keys);
-    }
+    this.indexRemoving = index;
+    this.removeEvt.emit(keys);
   }
-  cancelremove() {
-    if (!this.removeClosed) {
-      this.indexRemoving = undefined;
-      this.cancelRemoveEvt.emit();
-    }
+  pauseRemove() {
+    this.pauseRemoveEvt.emit();
+  }
+  resumeRemove() {
+    this.indexRemoving = undefined;
+    this.resumeRemoveEvt.emit();
+  }
+  cancelRemove() {
+    this.indexRemoving = undefined;
+    this.cancelRemoveEvt.emit();
   }
 
   clear() {
-    if (this.clearClosed) {
-      this.clearEvt.emit();
-    }
+    this.clearEvt.emit();
+  }
+  pauseClear() {
+    this.pauseClearEvt.emit();
+  }
+  resumeClear() {
+    this.resumeClearEvt.emit();
   }
   cancelClear() {
-    if (!this.clearClosed) {
-      this.cancelClearEvt.emit();
-    }
+    this.cancelClearEvt.emit();
   }
 
 }

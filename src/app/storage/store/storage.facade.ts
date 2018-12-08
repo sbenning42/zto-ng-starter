@@ -8,10 +8,13 @@ import { StorageLoad, StorageSave, StorageRemove, StorageClear } from './storage
 
 @Injectable()
 export class StorageFacade {
+
   storage$: Observable<StorageState> = this.store.pipe(select(selectStorage));
   loaded$: Observable<boolean> = this.store.pipe(select(selectStorageLoaded));
   entries$: Observable<StorageEntries> = this.store.pipe(select(selectStorageEntries));
+
   constructor(private store: Store<any>) { }
+
   load(storageEntries: StorageEntries) {
     this.store.dispatch(new StorageLoad({ storageEntries }));
   }
@@ -24,4 +27,5 @@ export class StorageFacade {
   clear() {
     this.store.dispatch(new StorageClear);
   }
+
 }

@@ -1,19 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { LoggerFlowFacade } from '../z-flow/logger-flow.facade';
 import { ZFlowEngine } from '../../z-flow-redux/models/z-flow-engine';
-
-const trackFlowLifeCycleObserver = (engine: ZFlowEngine) => ({
-  next: next => {
-    console.log(`Component for Engine ${engine.flow.type} Got Flow Next: `, next);
-  },
-  error: error => {
-    console.error(`Component for Engine ${engine.flow.type} Got Flow Error: `, error);
-  },
-  complete: () => {
-    console.log(`Component for Engine ${engine.flow.type} Got Flow Complete`);
-    engine.drop();
-  },
-});
+import { trackEngineLifeCycleObserver } from 'src/app/z-flow-redux/helpers/z-tools';
 
 @Component({
   selector: 'app-logger-facade-container',
@@ -33,7 +21,7 @@ export class LoggerFacadeContainerComponent implements OnInit {
   log(messages: any[]) {
     this.logEngine = this.facade.log(...messages);
     this.logEngine.start().subscribe(
-      trackFlowLifeCycleObserver(this.logEngine)
+      trackEngineLifeCycleObserver(this.logEngine)
     );
   }
   cancelLog() {
@@ -58,7 +46,7 @@ export class LoggerFacadeContainerComponent implements OnInit {
   error(messages: any[]) {
     this.errorEngine = this.facade.error(...messages);
     this.errorEngine.start().subscribe(
-      trackFlowLifeCycleObserver(this.errorEngine)
+      trackEngineLifeCycleObserver(this.errorEngine)
     );
   }
   cancelError() {

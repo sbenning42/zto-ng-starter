@@ -3,9 +3,9 @@ import { ZFlowFlow } from '../abstracts/z-flow-flow';
 import { ZFlowTaskStep } from './z-flow-task-step';
 import { ZFlowContextManager, ZFlowContext, ZFlowContextStatus } from './z-flow-context';
 import { ZFlowTaskGraph, ZFlowTaskNode, ZFlowTaskNodeTraverseMode } from './z-flow-task-graph';
-import { ZDictionnary } from '../helpers/z-tools';
+import { ZDictionnary, noOp } from '../helpers/z-tools';
 import { ZFlowTask } from '../abstracts/z-flow-task';
-import { ZFlowStoreService } from '../services/z-flow-store.service';
+import { ZFlowStoreService, GlobalDataPoolUpdateMode } from '../services/z-flow-store.service';
 import {
   tap,
   catchError,
@@ -152,23 +152,34 @@ export class ZFlowEngine {
     this.resolved$ = whileStatus$.pipe(filter(statusIsResolved), distinctUntilChanged());
 
   }
-  private updateContext(updateGlobalDataStore: boolean = false) {
+  private updateContext(
+    updateGlobalDataStore: boolean = false,
+    updateMode: GlobalDataPoolUpdateMode = GlobalDataPoolUpdateMode.remplace,
+    transformDataPoolFn: (dPool: Partial<ZDictionnary>) => Partial<ZDictionnary> = noOp,
+  ) {
     this.store.updateFlowContext({ id: this.context.id, changes: { ...this.context } });
     if (updateGlobalDataStore) {
-      this.updateGlobalDataStore();
+      this.updateGlobalDataStore(updateMode, transformDataPoolFn);
     }
   }
   private removeContext() {
     this.store.removeFlowContext(this.context.id);
   }
 
-  private updateGlobalDataStore() {
-    this.store.updateGlobalDataStore(this.context.localDataPool);
+  private updateGlobalDataStore(
+    updateMode: GlobalDataPoolUpdateMode = GlobalDataPoolUpdateMode.remplace,
+    transformDataPoolFn: (dPool: Partial<ZDictionnary>) => Partial<ZDictionnary> = noOp
+  ) {
+    this.store.updateGlobalDataStore(
+      this.context.localDataPool,
+      updateMode,
+      transformDataPoolFn,
+    );
   }
 
   private step(provide?: ZDictionnary, finish: boolean = true) {
     this.context = this.manager.step(provide, finish);
-    this.updateContext(true);
+    this.updateContext(true, this.flow.updateMode, this.flow.transformDataPoolFn);
   }
   private error(error?: Error) {
     this.context = this.manager.error(error);
@@ -176,7 +187,7 @@ export class ZFlowEngine {
   }
   private resolve(result?: ZDictionnary) {
     this.context = this.manager.resolve(result);
-    this.updateContext(true);
+    this.updateContext(true, this.flow.updateMode, this.flow.transformDataPoolFn);
   }
 
   private run(): Observable<ZDictionnary> {
@@ -234,9 +245,12 @@ export class ZFlowEngine {
       const rebinded = task.rebindSymbols ? task.rebindSymbols.find(findSymbol(symbol)) : undefined;
       return rebinded ? mapRebind(rebinded) : symbol;
     };
-    const getSymbolLocalData = (symbol: string) => {
+    const getSymbolInDataPools = (symbol: string) => {
       const rebindedSymbol = rebind(symbol);
-      return [rebindedSymbol, this.context.localDataPool[rebindedSymbol]];
+      const foundData = this.context.localDataPool[rebindedSymbol] !== undefined
+        ? this.context.localDataPool[rebindedSymbol]
+        : this.store.globalDataPoolSnapshot()[rebindedSymbol];
+      return [rebindedSymbol, foundData];
     };
     const onExecuted = (provide?: ZDictionnary) => this.step(provide);
     const onRetryed = (provide?: ZDictionnary) => this.step(provide, false);
@@ -247,7 +261,7 @@ export class ZFlowEngine {
     const executeTask = () => {
 
       task.injector = Object.entries(this.injector).filter(onlyNeeded).reduce(aggregateEntries, {});
-      const taskRequires = task.requiresSymbols.map(getSymbolLocalData).reduce(aggregateEntries, {});
+      const taskRequires = (task.requiresSymbols || []).map(getSymbolInDataPools).reduce(aggregateEntries, {});
 
       const recRetryOrErrorLogic = (taskFactory: () => Observable<ZDictionnary>) => (error: Error) => {
         // @TODO: Handle history here
@@ -267,8 +281,10 @@ export class ZFlowEngine {
         return defer(retry);
       };
 
-      const mayKickoffTaskExecution = () => {
-        taskNode.visit += 1;
+      const mayKickoffTaskExecution = (causedByPause: boolean = false) => {
+        if (!causedByPause) {
+          taskNode.visit += 1;
+        }
         switch (taskNode.traverseMode) {
           case ZFlowTaskNodeTraverseMode.firstParent:
             return taskNode.visit === 1 ? task.execute(taskRequires) : empty();
@@ -279,6 +295,7 @@ export class ZFlowEngine {
         }
       };
 
+      let call = 0;
       const taskExecution$ = this.whileContext$.pipe(
         pluck<ZFlowContext, ZFlowContextStatus>('status'),
         distinctUntilChanged(),
@@ -287,7 +304,7 @@ export class ZFlowEngine {
         concatMap((status: ZFlowContextStatus) => isRunning(status) || isPaused(status) ? of(status) : of(status, null)),
         takeWhile((status: ZFlowContextStatus) => !!status),
         // pause/resume logic + thanks to switchmap (and distinctUntilChanged) NEVER will be unsubscribe in any case
-        switchMap((status: ZFlowContextStatus) => (isRunning(status) ? mayKickoffTaskExecution() : NEVER)),
+        switchMap((status: ZFlowContextStatus) => (isRunning(status) ? mayKickoffTaskExecution(call !== 0) : (call++, NEVER))),
         catchError(recRetryOrErrorLogic(executeTask)),
         take(1),
         tap(onExecuted),

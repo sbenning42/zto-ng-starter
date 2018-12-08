@@ -22,14 +22,14 @@
       <button mat-button color="accent" *ngIf="!logClosed" (click)="cancelLog()">CANCEL LOG</button>
 
       <button mat-button color="accent" *ngIf="!logClosed && !logPaused" (click)="pauseLog()">PAUSE LOG</button>
-      <button mat-button color="accent" *ngIf="logPaused" (click)="resumeLog()">RESUME LOG</button>
+      <button mat-button color="accent" *ngIf="!logClosed && logPaused" (click)="resumeLog()">RESUME LOG</button>
 
 
       <button mat-button color="primary" *ngIf="errorClosed" (click)="error()" [disabled]="messageForm.invalid">ERROR</button>
       <button mat-button color="accent" *ngIf="!errorClosed" (click)="cancelError()">CANCEL ERROR</button>
 
       <button mat-button color="accent" *ngIf="!errorClosed && !errorPaused" (click)="pauseError()">PAUSE ERROR</button>
-      <button mat-button color="accent" *ngIf="errorPaused" (click)="resumeError()">RESUME ERROR</button>
+      <button mat-button color="accent" *ngIf="!errorClosed && errorPaused" (click)="resumeError()">RESUME ERROR</button>
     </mat-card-actions>
 
   </mat-card>

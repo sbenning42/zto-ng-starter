@@ -32,7 +32,7 @@ export class LoggerTaskError extends ZFlowTask {
   requiresSymbols = [LoggerSymbol.errorMessages];
 
   execute(requires: ZDictionnary): Observable<ZDictionnary> {
-    const messages = requires[LoggerSymbol.logMessages];
+    const messages = requires[LoggerSymbol.errorMessages];
     return this.injector.loggerService.error(...messages).pipe(map(emptyObj));
   }
 

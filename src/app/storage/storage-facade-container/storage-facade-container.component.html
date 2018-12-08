@@ -1,2 +1,42 @@
 <app-storage-facade-presenter
+
+  [loaded]="loaded$|async"
+  [entries]="entries$|async"
+
+
+  [loadClosed]="!loadEngine || (!(loadEngine.isRunning$|async) && !(loadEngine.isPaused$|async))"
+  [loadPaused]="loadEngine && (loadEngine.isPaused$|async)"
+
+  (loadEvt)="load($event)"
+  (pauseLoadEvt)="pauseLoad()"
+  (resumeLoadEvt)="resumeLoad()"
+  (cancelLoadEvt)="cancelLoad()"
+
+
+  [saveClosed]="!saveEngine || (!(saveEngine.isRunning$|async) && !(saveEngine.isPaused$|async))"
+  [savePaused]="saveEngine && (saveEngine.isPaused$|async)"
+
+  (saveEvt)="save($event)"
+  (pauseSaveEvt)="pauseSave()"
+  (resumeSaveEvt)="resumeSave()"
+  (cancelSaveEvt)="cancelSave()"
+
+
+  [removeClosed]="!removeEngine || (!(removeEngine.isRunning$|async) && !(removeEngine.isPaused$|async))"
+  [removePaused]="removeEngine && (removeEngine.isPaused$|async)"
+
+  (removeEvt)="remove($event)"
+  (pauseRemoveEvt)="pauseRemove()"
+  (resumeRemoveEvt)="resumeRemove()"
+  (cancelRemoveEvt)="cancelRemove()"
+
+
+  [clearClosed]="!clearEngine || (!(clearEngine.isRunning$|async) && !(clearEngine.isPaused$|async))"
+  [clearPaused]="clearEngine && (clearEngine.isPaused$|async)"
+
+  (clearEvt)="clear($event)"
+  (pauseClearEvt)="pauseClear()"
+  (resumeClearEvt)="resumeClear()"
+  (cancelClearEvt)="cancelClear()"
+
 ></app-storage-facade-presenter>

@@ -27,6 +27,7 @@ export class LoggerFacadePresenterComponent implements OnInit {
   @Output() resumeLogEvt: EventEmitter<void> = new EventEmitter;
   @Output() resumeErrorEvt: EventEmitter<void> = new EventEmitter;
 
+
   @ViewChild(FormGroupDirective) detachedForm: FormGroupDirective;
 
   messageForm: FormGroup;
@@ -42,17 +43,21 @@ export class LoggerFacadePresenterComponent implements OnInit {
   log() {
     if (this.logClosed) {
       const messages = [this.messageControl.value];
-      this.messageForm.reset();
       this.logEvt.emit(messages);
+      /*
+      this.messageForm.reset();
       this.detachedForm.reset();
+      */
     }
   }
   error() {
     if (this.errorClosed) {
       const messages = [this.messageControl.value];
-      this.messageForm.reset();
       this.errorEvt.emit(messages);
+      /*
+      this.messageForm.reset();
       this.detachedForm.reset();
+      */
     }
   }
   cancelLog() {

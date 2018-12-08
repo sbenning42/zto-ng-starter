@@ -8,6 +8,7 @@ import { StoreModule } from '@ngrx/store';
 import { storageStoreSelectorKey } from './store/storage.selectors';
 import { storageReducer } from './store/storage.reducer';
 import { StorageFacade } from './store/storage.facade';
+import { StorageFlowFacade } from './z-flow/storage-flow.facade';
 
 @NgModule({
   imports: [
@@ -19,6 +20,7 @@ import { StorageFacade } from './store/storage.facade';
   providers: [
     StorageService,
     StorageFacade,
+    StorageFlowFacade
   ],
   exports: [StorageFacadeContainerComponent]
 })

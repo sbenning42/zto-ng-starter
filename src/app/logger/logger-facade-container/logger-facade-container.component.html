@@ -9,7 +9,7 @@
   (cancelLogEvt)="cancelLog()"
 
 
-  [errorClosed]="!errorEngine || !(errorEngine.isRunning$|async)"
+  [errorClosed]="!errorEngine || (!(errorEngine.isRunning$|async) && !(errorEngine.isPaused$|async))"
   [errorPaused]="errorEngine && (errorEngine.isPaused$|async)"
 
   (errorEvt)="error($event)"

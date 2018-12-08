@@ -17,9 +17,11 @@
             <span style="flex: 1"></span>
             <b>{{entry[1]}}</b>
             <span style="flex: 1"></span>
-            <button mat-button color="warn" [disabled]="!removeClosed" *ngIf="removeClosed" (click)="remove(index, [entry[0]])">DELETE</button>
+            <button mat-button color="warn" *ngIf="removeClosed" (click)="remove(index, [entry[0]])">DELETE</button>
             <button mat-button color="warn" *ngIf="!removeClosed && indexRemoving !== index" [disabled]="true">DELETE</button>
-            <button mat-button color="warn" *ngIf="!removeClosed && indexRemoving === index" (click)="cancelremove()">CANCEL DELETE</button>
+            <button mat-button color="warn" *ngIf="!removeClosed && indexRemoving === index" (click)="cancelRemove()">CANCEL DELETE</button>
+            <button mat-button color="accent" *ngIf="!removeClosed && indexRemoving === index && !removePaused" (click)="pauseRemove()">RESUME DELETE</button>
+            <button mat-button color="accent" *ngIf="!removeClosed && indexRemoving === index && removePaused" (click)="resumeRemove()">RESUME DELETE</button>
           </section>
         </mat-list-item>
       </mat-list>
@@ -33,15 +35,22 @@
           <input matInput type="text" placeholder="Entry value *" formControlName="value">
           <mat-error *ngIf="valueControl.invalid && valueControl.hasError('required')">An Entry Value is required</mat-error>
         </mat-form-field>
-        <button mat-button color="primary" (click)="save()" [disabled]="saveForm.invalid || !saveClosed" *ngIf="saveClosed">SAVE</button>
-        <button mat-button color="accent" (click)="cancelSave()" [disabled]="saveClosed" *ngIf="!saveClosed">CANCEL SAVE</button>
+        <button mat-button color="primary" (click)="save()" *ngIf="saveClosed" [disabled]="saveForm.invalid">SAVE</button>
+        <button mat-button color="accent" (click)="cancelSave()" *ngIf="!saveClosed">CANCEL SAVE</button>
+        <button mat-button color="accent" (click)="pauseSave()" *ngIf="!saveClosed && !savePaused">PAUSE SAVE</button>
+        <button mat-button color="accent" (click)="resumeSave()" *ngIf="!saveClosed && savePaused">RESUME SAVE</button>
       </form>
     </mat-card-content>
     <mat-card-actions class="flex-row-cs">
-      <button mat-button color="primary" (click)="load()" [disabled]="!loadClosed" *ngIf="loadClosed">LOAD</button>
-      <button mat-button color="accent" (click)="cancelLoad()" [disabled]="loadClosed" *ngIf="!loadClosed">CANCEL LOAD</button>
-      <button mat-button color="warn" (click)="clear()" [disabled]="!clearClosed" *ngIf="clearClosed">CLEAR</button>
-      <button mat-button color="accent" (click)="cancelClear()" [disabled]="clearClosed" *ngIf="!clearClosed">CANCEL CLEAR</button>
+      <button mat-button color="primary" (click)="load()" *ngIf="loadClosed">LOAD</button>
+      <button mat-button color="accent" (click)="cancelLoad()" *ngIf="!loadClosed">CANCEL LOAD</button>
+      <button mat-button color="accent" (click)="pauseLoad()" *ngIf="!loadClosed && !loadPaused">PAUSE LOAD</button>
+      <button mat-button color="accent" (click)="resumeLoad()" *ngIf="!loadClosed && loadPaused">RESUME LOAD</button>
+
+      <button mat-button color="warn" (click)="clear()" *ngIf="clearClosed">CLEAR</button>
+      <button mat-button color="accent" (click)="cancelClear()" *ngIf="!clearClosed">CANCEL CLEAR</button>
+      <button mat-button color="accent" (click)="pauseClear()" *ngIf="!clearClosed && !clearPaused">PAUSE CLEAR</button>
+      <button mat-button color="accent" (click)="resumeClear()" *ngIf="!clearClosed && clearPaused">RESUME CLEAR</button>
     </mat-card-actions>
   </mat-card>
 </section>

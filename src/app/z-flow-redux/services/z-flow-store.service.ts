@@ -1,13 +1,19 @@
 import { Injectable } from '@angular/core';
 import { Store, select, createSelector } from '@ngrx/store';
 import { Observable } from 'rxjs';
-import { ZFlowState, zFlowStateflowContextsAdapter } from '../store/z-flow.state';
+import { ZFlowState, zFlowStateflowContextsAdapter, initialZFlowState } from '../store/z-flow.state';
 import { ZFlowContext } from '../models/z-flow-context';
 import { EntityState, Update } from '@ngrx/entity';
-import { ZDictionnary } from '../helpers/z-tools';
+import { ZDictionnary, noOp } from '../helpers/z-tools';
 import { ZFlowContextAdd, ZFlowContextUpdate, ZFlowContextRemove, ZFlowGlobalDataPoolUpdate } from '../store/z-flow.actions';
 import { zFlowStoreSelector } from '../store/z-flow.reducer';
 import { map, filter } from 'rxjs/operators';
+
+export enum GlobalDataPoolUpdateMode {
+  remplace = '[Global DataPool Update Mode] Remplace',
+  merge = '[Global DataPool Update Mode] Merge',
+  custom = '[Global DataPool Update Mode] Custom',
+}
 
 const {
   selectAll,
@@ -31,6 +37,8 @@ const selectTotalFlowContexts = createSelector(selectFlowContexts, selectTotal);
 })
 export class ZFlowStoreService {
 
+  private lastGlobalDataPoolState: ZDictionnary = initialZFlowState.globalDataPool;
+
   zFlow$: Observable<ZFlowState> = this.store.pipe(select(selectZFlow));
 
   flowContexts$: Observable<EntityState<ZFlowContext>> = this.store.pipe(select(selectFlowContexts));
@@ -40,12 +48,16 @@ export class ZFlowStoreService {
     select(selectEntitiesFlowContexts),
     map((flowContexts: ZDictionnary<ZFlowContext>) => flowContexts[id]),
   )
-  globalData: (symbol: string) => Observable<any> = (symbol: string) => this.store.pipe(
+  globalData: <T = any>(symbol: string) => Observable<T> = <T>(symbol: string) => this.store.pipe(
     select(selectGlobalDataPool),
-    map((globalDataPool: ZDictionnary) => globalDataPool[symbol])
+    map<ZDictionnary, T>((globalDataPool: ZDictionnary) => globalDataPool[symbol])
   )
 
   constructor(private store: Store<any>) { }
+
+  globalDataPoolSnapshot(): ZDictionnary {
+    return { ...this.lastGlobalDataPoolState };
+  }
 
   addFlowContext(flowContext: ZFlowContext) {
     this.store.dispatch(new ZFlowContextAdd(flowContext));
@@ -57,7 +69,37 @@ export class ZFlowStoreService {
     this.store.dispatch(new ZFlowContextRemove(id));
   }
 
-  updateGlobalDataStore(dataPool: Partial<ZDictionnary>) {
-    this.store.dispatch(new ZFlowGlobalDataPoolUpdate(dataPool));
+  updateGlobalDataStore(
+    dataPool: Partial<ZDictionnary>,
+    updateMode: GlobalDataPoolUpdateMode = GlobalDataPoolUpdateMode.remplace,
+    transformDataPoolFn: (dPool: Partial<ZDictionnary>) => Partial<ZDictionnary> = noOp
+  ) {
+
+    let payload;
+    const mergeData = (old, now) => {
+      const transform = Array.isArray(old) ? [...old, ...now] : { ...old, ...now };
+      return transform;
+    };
+    const mergePoolSymbols = (pool, [symbol, data]) => ({ ...pool, [symbol]: mergeData(pool[symbol], data) });
+
+    switch (updateMode) {
+      case GlobalDataPoolUpdateMode.merge:
+        payload = Object.entries(dataPool)
+          .reduce(mergePoolSymbols, this.lastGlobalDataPoolState);
+        break;
+      case GlobalDataPoolUpdateMode.custom:
+        payload = transformDataPoolFn(dataPool);
+        break;
+      case GlobalDataPoolUpdateMode.remplace:
+      default:
+        payload = dataPool;
+        break;
+    }
+
+    this.store.dispatch(new ZFlowGlobalDataPoolUpdate(payload));
+    this.lastGlobalDataPoolState = {
+      ...this.lastGlobalDataPoolState,
+      ...payload
+    };
   }
 }

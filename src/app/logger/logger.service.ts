@@ -12,21 +12,22 @@ export class LoggerService {
   log(...messages: any[]): Observable<any> {
     return timer(5000).pipe(
       first(),
+      // switchMap(() => throwError(new Error('Random service error')))
       tap(() => {
         console.log(...messages);
       }),
-      map(() => ({ messages, channel: 'log' })),
-      // switchMap(() => throwError(new Error('Random service error')))
+      map(() => ({ messages })),
     );
   }
+
   error(...messages: any[]): Observable<any> {
     return timer(0).pipe(
       first(),
+      // switchMap(() => throwError(new Error('Random service error')))
       tap(() => {
         console.error(...messages);
       }),
-      map(() => ({ messages, channel: 'error' })),
-      // switchMap(() => throwError(new Error('Random service error')))
+      map(() => ({ messages })),
     );
   }
 

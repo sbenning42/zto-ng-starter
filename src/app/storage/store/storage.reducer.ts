@@ -3,6 +3,7 @@ import { StorageActions, StorageActionsType, StorageLoad, StorageSave, StorageRe
 
 export function storageReducer(state: StorageState = initialStorageState, action: StorageActions): StorageState {
   switch (action.type) {
+
     case StorageActionsType.load: {
       const payload = (action as StorageLoad).payload;
       return {
@@ -11,6 +12,7 @@ export function storageReducer(state: StorageState = initialStorageState, action
         entries: payload.storageEntries,
       };
     }
+
     case StorageActionsType.save: {
       const payload = (action as StorageSave).payload;
       return {
@@ -18,23 +20,26 @@ export function storageReducer(state: StorageState = initialStorageState, action
         entries: {...state.entries, ...payload.storageEntries},
       };
     }
+
     case StorageActionsType.remove: {
       const payload = (action as StorageRemove).payload;
-      const notRemoved = (keys: string[]) => ([key]: [string, string]) => !keys.includes(key);
+      const removed = (keys: string[] = []) => ([key]: [string, string]) => !keys.includes(key);
       const aggregate = (acc, [key, value]) => ({ ...acc, [key]: value });
       return {
         ...state,
         entries: Object.entries(state.entries)
-          .filter(notRemoved(payload.keys))
+          .filter(removed(payload.keys))
           .reduce(aggregate, {}),
       };
     }
+
     case StorageActionsType.clear: {
       return {
         ...state,
         entries: {}
       };
     }
+
     default:
       return state;
   }

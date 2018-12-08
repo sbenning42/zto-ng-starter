@@ -1,4 +1,6 @@
 import { ZFlowTask } from './z-flow-task';
+import { GlobalDataPoolUpdateMode } from '../services/z-flow-store.service';
+import { ZDictionnary, noOp } from '../helpers/z-tools';
 
 export class ZFlowTaskMetadata {
   root = false;
@@ -9,6 +11,9 @@ export abstract class ZFlowFlow extends ZFlowTask {
   tasks: ZFlowTask[] = [this];
   targets: ZFlowTask[] = [this];
   links: [ZFlowTask, ZFlowTask][] = [];
+
+  updateMode: GlobalDataPoolUpdateMode = GlobalDataPoolUpdateMode.remplace;
+  transformDataPoolFn: (dPool: Partial<ZDictionnary>) => Partial<ZDictionnary> = noOp;
 
   addTask(task: ZFlowTask, metadata: ZFlowTaskMetadata = new ZFlowTaskMetadata) {
     this.tasks.push(task);
