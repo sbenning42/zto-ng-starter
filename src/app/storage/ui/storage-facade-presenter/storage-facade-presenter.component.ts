@@ -1,5 +1,5 @@
 import { Component, OnInit, Input, ChangeDetectionStrategy, Output, EventEmitter } from '@angular/core';
-import { StorageEntries } from '../../storage/storage.models';
+import { StorageEntries } from '../../../storage/storage.models';
 import { FormGroup, Validators, FormControl } from '@angular/forms';
 
 @Component({

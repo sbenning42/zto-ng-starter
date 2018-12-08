@@ -1,10 +1,10 @@
 import { Component, OnInit } from '@angular/core';
 import { Observable } from 'rxjs';
-import { StorageEntries } from '../storage.models';
+import { StorageEntries } from '../../storage.models';
 import { ZFlowEngine } from 'src/app/z-flow-redux/models/z-flow-engine';
-import { StorageFlowFacade } from '../z-flow/storage-flow.facade';
+import { StorageFlowFacade } from '../../z-flow/storage-flow.facade';
 import { trackEngineLifeCycleObserver } from 'src/app/z-flow-redux/helpers/z-tools';
-import { StorageSymbol } from '../z-flow/storage.tasks';
+import { StorageSymbol } from '../../z-flow/storage.tasks';
 import { map } from 'rxjs/operators';
 
 @Component({

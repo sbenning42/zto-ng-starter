@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { ToastFlowFacade } from '../z-flow/toast-flow.facade';
+import { ToastFlowFacade } from '../../z-flow/toast-flow.facade';
 import { ZFlowEngine } from 'src/app/z-flow-redux/models/z-flow-engine';
 import { trackEngineLifeCycleObserver } from 'src/app/z-flow-redux/helpers/z-tools';
 import { tap } from 'rxjs/operators';

@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
-import { LoggerFlowFacade } from '../z-flow/logger-flow.facade';
-import { ZFlowEngine } from '../../z-flow-redux/models/z-flow-engine';
+import { LoggerFlowFacade } from '../../z-flow/logger-flow.facade';
+import { ZFlowEngine } from '../../../z-flow-redux/models/z-flow-engine';
 import { trackEngineLifeCycleObserver } from 'src/app/z-flow-redux/helpers/z-tools';
 
 @Component({

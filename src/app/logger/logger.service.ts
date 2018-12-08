@@ -10,7 +10,7 @@ export class LoggerService {
   constructor() { }
 
   log(...messages: any[]): Observable<any> {
-    return timer(5000).pipe(
+    return timer(0).pipe(
       first(),
       // switchMap(() => throwError(new Error('Random service error')))
       tap(() => {
