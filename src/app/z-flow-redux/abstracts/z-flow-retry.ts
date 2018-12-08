@@ -19,26 +19,35 @@ export abstract class ZFlowRetry extends ZFlowAtom {
   abstract onFailure(requires?: ZDictionnary, history?: ZFlowHistory): ZFlowRetryDecision;
 }
 
+// @TODO: At this point no revert/revertAll logic is implemented.
+// @TODO: This Class is Useless
 export class ZFlowAlwayRevert extends ZFlowRetry {
   type = ZFlowRetryType.alwaysRevert;
   onFailure(): ZFlowRetryDecision {
     return ZFlowRetryDecision.revert;
   }
 }
+
+// @TODO: At this point no revert/revertAll logic is implemented.
+// @TODO: This Class is Useless
 export class ZFlowAlwayRevertAll extends ZFlowRetry {
   type = ZFlowRetryType.alwaysRevertAll;
   onFailure(): ZFlowRetryDecision {
     return ZFlowRetryDecision.revertAll;
   }
 }
+
+// @TODO: At this point ne retry logic has been tested.
+// @TODO: This Class is Unsafe
+// @TODO: that why it's at this time, logicaly patched to the Useless ZFlowAlwayRevert
 export class ZFlowRetryCount extends ZFlowRetry {
   requiresSymbols = [ZFlowInternalSymbol.retryCount];
-  type = ZFlowRetryType.alwaysRevert;
+  type = ZFlowRetryType.retryCount;
 
   retryTime = 0;
   onFailure(requires?: ZDictionnary): ZFlowRetryDecision {
     return ++this.retryTime > requires[ZFlowInternalSymbol.retryCount]
       ? ZFlowRetryDecision.revert
-      : ZFlowRetryDecision.retry;
+      : ZFlowRetryDecision./*retry*/revert;
   }
 }
