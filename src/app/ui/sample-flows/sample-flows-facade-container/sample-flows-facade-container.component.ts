@@ -17,7 +17,7 @@ export class SampleFlowsFacadeContainerComponent implements OnInit {
   sample1Engine: ZFlowEngine;
   sample2Engine: ZFlowEngine;
 
-  toastIfError: ZFlowEngine;
+  toastIfErrorEngine: ZFlowEngine;
 
   constructor(
     public sampleFlows: SampleFlowsFlowFacade,
@@ -55,10 +55,10 @@ export class SampleFlowsFacadeContainerComponent implements OnInit {
   sample2() {
     this.sample2Engine = this.sampleFlows.sample2(/*new ZFlowEngineOptions(false, undefined, undefined, false)*/);
     const ifError = (error: Error) => {
-      const toastIfError = this.toast.open('An error occured: ' + error.message);
-      const cleanUp = () => toastIfError.drop();
+      const toastIfErrorEngine = this.toast.open('An error occured: ' + error.message);
+      const cleanUp = () => toastIfErrorEngine.drop();
       const dropAll = () => false;
-      return concat(toastIfError.start().pipe(filter(dropAll), finalize(cleanUp)), throwError(error));
+      return concat(toastIfErrorEngine.start().pipe(filter(dropAll), finalize(cleanUp)), throwError(error));
     };
     this.sample2Engine.messages$.subscribe(
       (message: ZFlowTaskStep) => console.log('A Step Message of sample2Engine arrived: ', message),

@@ -73,13 +73,13 @@ export class SampleFlowsRebindFlowToastOpenAfterSample1 extends RebindFlowToastO
 export class SampleFlowsRebindFlowLogBeforeSample2 extends RebindFlowLoggerLog {
   constructor() { super(SampleFlowsSymbol.sample2LogBeforeMessages); }
 }
-// This shows how an extended Flow can override a partical task execution,
+// The following shows how an extended Flow can override a particular task execution,
 // and still be able to access the overriden execute method (aka: same as super.execute(...) in OOP)
 // in that override function.
 
 // It can be useful in order to access localDataPool/globalDataPool with
-// an overriden requiresSymbols array for a partical task, and wrap the call
-// to it's original execute method  in an override, who hook the engine and inject
+// an overriden requiresSymbols array for a particular task, and wrap the call
+// to it's original execute method in an override method, who hook the engine and inject
 // a reformated representation of some additional requires values who fit in the
 // original requires values.
 
@@ -97,17 +97,19 @@ export class SampleFlowsRebindFlowLogAfterSample2 extends RebindFlowLoggerLog {
       ...(superLog.requiresSymbols || []),
       StorageSymbol.storageEntries,
     ];
-    // Now, becouse we don't want to re-implement the original logger.log's execute method
+    // Now, because we don't want to re-implement the original logger.log's execute method
     // but still use StorageSymbol.storageEntries in it's payload/execute parameter (aka: LoggerSymbol.logMessages)
     // if and when the engine will choose to runs it, we'll grab and re-bind superLog.execute, and with that
     // sain reference we can now override the original (aka: in superLog)
 
     // We could instead override superLog.rebindSymbols but we would not have the opportunity to re-format
     // StorageSymbol.storageEntries value before mapping-it to LoggerSymbol.logMessages that way.
-    // so, we grab superLog.execute, bind it to superLog (execute is mostely to )
+    // so, we grab superLog.execute, bind it to superLog and format a new LoggerSymbol.logMessages to
+    // give to original superLog.execute
     const superLogExecute = superLog.execute.bind(superLog);
     // we keep also in mind that by extending RebindFlowLoggerLog, our message is
-    // actualy in requires[LoggerSymbol.logMessages]..
+    // actualy in requires[LoggerSymbol.logMessages]
+    // and not in requires[SampleFlowsSymbol.sample2LogAfterMessages]..
     superLog.execute = (requires: ZDictionnary) => {
       const overridenRequires = {
         [LoggerSymbol.logMessages]: [
@@ -116,7 +118,7 @@ export class SampleFlowsRebindFlowLogAfterSample2 extends RebindFlowLoggerLog {
           requires[StorageSymbol.storageEntries]
         ]
       };
-      superLog.messageBus.next({ payload: { source: superLog.type, youCanHookHereToDoAdditionalThingWith: requires } });
+      superLog.messageBus.next({ payload: { source: superLog.type, youCanHookHereToDoAdditionalThingsWith: requires } });
       return superLogExecute(overridenRequires).pipe(
         /*
         tap(() => {
@@ -183,11 +185,14 @@ export class SampleFlowsFlowSample1 extends ZFlowFlow {
     this.addTask(logBefore, { root: true, target: false });
     this.addTask(openToastBefore, { root: true, target: false });
     this.addTask(loadStorage, { root: true, target: false });
-    this.addTask(logAfter, { root: false, target: true });
-    this.addTask(openToastAfter, { root: false, target: true });
+    this.addTask(logAfter);
+    this.addTask(openToastAfter);
+
+    this.targets.push(loadStorage.targets[1]);
 
     this.addLink([loadStorage.targets[1], logAfter]);
     this.addLink([loadStorage.targets[1], openToastAfter]);
+
   }
 }
 
