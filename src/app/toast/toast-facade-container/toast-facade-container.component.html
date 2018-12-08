@@ -1,6 +1,15 @@
 <app-toast-facade-presenter
+  [openClosed]="true"
+  [closeClosed]="true"
+  [openPaused]="false"
+  [closePaused]="false"
+  [beenOpen]="beenOpen"
   (openEvt)="open($event)"
   (closeEvt)="close()"
+  (pauseOpenEvt)="pauseOpen()"
+  (pauseCloseEvt)="pauseClose()"
+  (resumeOpenEvt)="resumeOpen()"
+  (resumeCloseEvt)="resumeClose()"
   (cancelOpenEvt)="cancelOpen()"
   (cancelCloseEvt)="cancelClose()"
 ></app-toast-facade-presenter>

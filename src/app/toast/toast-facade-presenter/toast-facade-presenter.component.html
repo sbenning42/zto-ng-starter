@@ -15,7 +15,15 @@
       </form>
     </mat-card-content>
     <mat-card-actions class="flex-row-cs">
-      <button mat-button color="primary" (click)="open()" [disabled]="messageForm.invalid">SEND</button>
+      <button mat-button color="primary" *ngIf="openClosed" (click)="open()" [disabled]="messageForm.invalid">SEND</button>
+      <button mat-button color="accent" *ngIf="!openClosed" (click)="cancelOpen()">CANCEL SEND</button>
+      <button mat-button color="accent" *ngIf="!openClosed && !openPaused" (click)="pauseOpen()">PAUSE SEND</button>
+      <button mat-button color="accent" *ngIf="!openClosed && openPaused" (click)="resumeOpen()">RESUME SEND</button>
+
+      <button mat-button color="primary" *ngIf="closeClosed" (click)="close()" [disabled]="!beenOpen">CLOSE</button>
+      <button mat-button color="accent" *ngIf="!closeClosed" (click)="cancelClose()">CANCEL CLOSE</button>
+      <button mat-button color="accent" *ngIf="!closeClosed && !closePaused" (click)="pauseClose()">PAUSE CLOSE</button>
+      <button mat-button color="accent" *ngIf="!closeClosed && closePaused" (click)="resumeClose()">RESUME CLOSE</button>
     </mat-card-actions>
   </mat-card>
 </section>
